@@ -48,10 +48,8 @@ END
 
 FUNCTION velocity_analysis, t, d, measure_errors, $
                             pfit=result, $
-                            velocity=velocity, $
-                            velocity_error=velocity_error, $
-                            acceleration=acceleration, $
-                            acceleration_error=acceleration_error, $
+                            velocity_result=velocity_result, $
+                            acceleration_result=acceleration_result, $
                             velocity_at_final_time=velocity_at_final_time
   ;
   ; Perform the velocity analysis
@@ -60,15 +58,17 @@ FUNCTION velocity_analysis, t, d, measure_errors, $
   nt = n_elements(t)
 
   ; Fit a polynomial
-  result = poly_fit(t, dxy_d, 2, measure_errors=measure_errors, sigma=sigma)
+  fit_result = poly_fit(t, d, 2, measure_errors=measure_errors, sigma=sigma)
 
   ; Get the velocity and its error
   velocity = result[1]
   velocity_error = sigma[1]
+  velocity_result = [velocity, velocity_error]
 
   ; Acceleration and its error
   acceleration = 2 * result[2]
   acceleration_error = 2 * sigma[2]
+  acceleration_result = [acceleration, acceleration_error]
 
   ; The velocity at the final measurement time plus an estimate of
   ; the error
@@ -80,7 +80,7 @@ FUNCTION velocity_analysis, t, d, measure_errors, $
   endfor
 
   ; return the result of the fit
-  return, result
+  return, fit_result
 END
 
 
@@ -240,7 +240,7 @@ t = 12.0 * tsum * findgen(njdi)
 ;
 ; Go through the images with the jet and get a location of the jet front
 ;
-nrepeat = 10
+nrepeat = 3
 pos = fltarr(nrepeat, njdi, 2)
 d = fltarr(nrepeat, njdi)
 for j = 0, nrepeat -1 do begin
@@ -281,9 +281,10 @@ for win = 0,1 do begin
       oplot, t, pos[i, *, win]
    endfor
    if win eq 0 then begin
-       plot, t, xaverage, thick=5
+       oplot, t, x_average, thick=5
     endif else begin
-       plot, y, yaverage, thick=5
+       oplot, y, y_average, thick=5
+    endelse
 endfor
 
 ;
