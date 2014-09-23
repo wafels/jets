@@ -83,55 +83,10 @@ FUNCTION velocity_analysis, t, d, measure_errors, $
   return, fit_result
 END
 
-
-; The directory where all my SDO AIA FITS files are
-;directory = '/home/ireland/Data/AIA/wobble/1.0/171'
-;directory = '/home/ireland/Data/AIA/jets/20130717/based_on_projected_footpoint/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20130717/based_on_observed_activity/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20130726/based_on_activity_and_projection/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120608/based_on_activity/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120810/region1/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120810/region2/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120113/region1/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120113/region2/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120103/region2/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20110707/region1/94'
-;directory = '/home/ireland/Data/AIA/jets/20110707/region2/94'
-;directory = '/home/ireland/Data/AIA/jets/20110707/region3/94'
-;directory = '/home/ireland/Data/AIA/jets/20110218/region1/94'
-;directory = '/home/ireland/Data/AIA/jets/20110218/region2/94'
-;directory = '/home/ireland/Data/AIA/jets/20130926/1.0/94'
-
 ;
-; Final list of interesing events
+; Movie we want to look at
 ;
-;Jul 17 2013 - Y
-;Jul 26 2013 - Y
-;Nov 20 2012 - NO DATA, now ordered
-;Aug 2 2012 - NO DATA, now ordered
-;Jun 8 2012 - Y
-;Jan 13 2012 - Y
-;Jul7 2011 - Y
-;Feb 18 2011 - Y
-
-;directory = '/home/ireland/Data/AIA/jets/20130717/based_on_projected_footpoint/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20130717/based_on_observed_activity/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20130726/based_on_activity_and_projection/1.0/94'
-;directory = '/home/ireland/Data/AIA/jets/20120608/based_on_activity/1.0/94'
-
-directory = '~/Data/AIA/jets/selected/20110218/region1/94/'
-directory = '~/Data/AIA/jets/selected/20121120/region1/1.0/94'
-directory = '~/Data/AIA/jets/20121120/attempt1/1.0/94'
-directory = '~/Data/AIA/jets/20121120/attempt2/1.0/94'
-
-
-tsum = 2
-xsum = 3
-ysum = xsum
-running_diff = 0
-median_length = 3
-
-movie = get_jet_movie(
+movie = get_jet_movie('~/Data/AIA/jets/20121120/attempt2/1.0/94', tsum, xsum, running_diff=0)
 
 ; Show a histogram of the movie.  This will let you determine
 ; good levels to clip the movie at
@@ -188,8 +143,8 @@ for j = 0, nrepeat -1 do begin
    for i = 0, njdi - 1  do begin
       plot_image, movie[*, *, i + jet_duration_index[0] ]
       cursor, x, y, /data, /down
-      pos[j, i, 0] = x
-      pos[j, i, 1] = y
+      pos[j, i, 0] = x * xsum
+      pos[j, i, 1] = y * ysum
    endfor
 ;
 ; Distance traveled
