@@ -45,6 +45,45 @@ FUNCTION ji_ltez,data, repval
   return, data
 END
 
+
+FUNCTION velocity_analysis, t, d, measure_errors, $
+                            pfit=result, $
+                            velocity=velocity, $
+                            velocity_error=velocity_error, $
+                            acceleration=acceleration, $
+                            acceleration_error=acceleration_error, $
+                            velocity_at_final_time=velocity_at_final_time
+  ;
+  ; Perform the velocity analysis
+  ;
+  ; Number of elements
+  nt = n_elements(t)
+
+  ; Fit a polynomial
+  result = poly_fit(t, dxy_d, 2, measure_errors=measure_errors, sigma=sigma)
+
+  ; Get the velocity and its error
+  velocity = result[1]
+  velocity_error = sigma[1]
+
+  ; Acceleration and its error
+  acceleration = 2 * result[2]
+  acceleration_error = 2 * sigma[2]
+
+  ; The velocity at the final measurement time plus an estimate of
+  ; the error
+  velocity_at_final_time = fltarr(3, 3)
+  for v = -1, 1 do begin
+     for a = -1, 1 do begin
+        velocity_at_final_time[v + 1, a + 1] = velocity + v * velocity_error + (acceleration + a * acceleration_error) * t[nt - 1]
+     endfor
+  endfor
+
+  ; return the result of the fit
+  return, result
+END
+
+
 ; The directory where all my SDO AIA FITS files are
 ;directory = '/home/ireland/Data/AIA/wobble/1.0/171'
 ;directory = '/home/ireland/Data/AIA/jets/20130717/based_on_projected_footpoint/1.0/94'
@@ -218,7 +257,13 @@ for j = 0, nrepeat -1 do begin
    d[j, *] = sqrt( (pos[j, *, 0] - pos[j, 0, 0])^2 + (pos[j, *, 1] - pos[j, 0, 1])^2 )
 endfor
 ;
-; Get the average location of the jet.
+; Get the average distance
+;
+d_average = mean(d, dimension=1)
+d_sigma = stddev(d, dimension=1)
+
+;
+; Get the average x and y locations of the jet.
 ;
 x_average = mean(pos[*, *, 0], dimension=1)
 x_average = x_average - x_average[0]
@@ -230,7 +275,7 @@ y_sigma = stddev(pos[*, *, 1], dimension=1)
 
 ytitle = ['x position', 'y position']
 for win = 0,1 do begin
-   window,0
+   window, win
    plot, t, pos[*, *, win], xtitle='time', ytitle=ytitle[win]
    for i = 1, nrepeat - 1 do begin
       oplot, t, pos[i, *, win]
@@ -239,28 +284,61 @@ for win = 0,1 do begin
        plot, t, xaverage, thick=5
     endif else begin
        plot, y, yaverage, thick=5
-
 endfor
 
 ;
 ; Displacement
 ;
-d_average = sqrt((x_average - x_average[0])^2 + (y_average - y_average[0])^2)
-d_sigma = 0.5 * sqrt( x_sigma^2 + y_sigma^2 )
+dxy_average = sqrt((x_average - x_average[0])^2 + (y_average - y_average[0])^2)
+dxy_sigma = 0.5 * sqrt( x_sigma^2 + y_sigma^2 )
 
 ;
 ; Fit to get a plane of sky velocity in pixels.
 ;
-result = poly_fit(t, d_average, 2, measure_errors=d_sigma, sigma=sigma)
+dxy_fit_poly = velocity_analysis(t, dxy_average, dxy_sigma, $
+                                 velocity=dxy_velocity, $
+                                 acceleration=dxy_acceleration, $
+                                 velocity_at_final_time=dxy_vaft)
+; distance according to the fit.
+dxy_average_fit = poly(t, dxy_fit_poly)
 
 ;
-;
+; Final results
 ;
 window, 2
-plot, t, d_average, xtitle='time', ytitle='displacement'
-oplot, t, d_average - d_sigma, linestyle=1, xtitle='time', ytitle='displacement'
-oplot, t, d_average + d_sigma, linestyle=1, xtitle='time', ytitle='displacement'
-oplot, t, d_average_fit, thick=3, linestyle=2
+plot, t, dxy_average, xtitle='time', ytitle='displacement', title = 'Average displacement (' + string(nrepeat) + ' measurements)', linestyle=0
+oplot, t, dxy_average - dxy_sigma, linestyle=0
+oplot, t, dxy_average + dxy_sigma, linestyle=0
+oplot, t, dxy_average_fit, thick=3, linestyle=0
+
+;oplot, t, d_average, linestyle=2
+;oplot, t, d_average - d_sigma, linestyle=2
+;oplot, t, d_average + d_sigma, linestyle=2
+;oplot, t, d_average_fit, thick=3, linestyle=0
+
+;
+; Where to plot the information about the velocity.
+;
+yrange = max(dxy_average_fit) - min(dxy_average_fit)
+yloc_min = min(dxy_average_fit) + 0.1 * yrange
+yloc_max = max(dxy_average_fit) - 0.1 * yrange
+nloc = 4
+yloc = fltarr(nloc)
+for i = 0, nloc - 1 do begin
+   yloc[i] = yloc_min + i * (yloc_max - yloc_min)/(1.0 * nloc)
+endfor
+
+; Plot out the fit information
+format1 = '(F5.2)'
+format2 = '(F5.2)'
+xyouts, t[xloc], yloc[0], 'polyfit, Velocity (px/sec) = ' + STRING(velocity, FORMAT=format1)
+xyouts, t[xloc], yloc[1], 'polyfit, Acceleration (px/sec/sec) = ' + STRING(acceleration, FORMAT=format1)
+error_in_vaft = fltarr(2)
+error_in_vaft[0] = min(dxy_vaft) - dxy_vaft[1, 1] 
+error_in_vaft[1] = max(dxy_vaft) - dxy_vaft[1, 1] 
+xyouts, t[xloc], yloc[2], 'velocity at final time (px/sec) = ' + STRING(velocity_at_final_time[1], FORMAT=format2)
+xyouts, t[xloc], yloc[3], 'error in velocity at final time (px/sec) = ' + STRING(error_in_vaft[0], FORMAT=format2) + ' , ' + STRING(error_in_vaft[1], FORMAT=format2)
+
 
 
 END
