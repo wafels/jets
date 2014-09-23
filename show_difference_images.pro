@@ -50,7 +50,7 @@ FUNCTION velocity_analysis, t, d, measure_errors, $
                             pfit=result, $
                             velocity_result=velocity_result, $
                             acceleration_result=acceleration_result, $
-                            velocity_at_final_time=velocity_at_final_time
+                            v_at_final_time=velocity_at_final_time
   ;
   ; Perform the velocity analysis
   ;
@@ -61,12 +61,12 @@ FUNCTION velocity_analysis, t, d, measure_errors, $
   fit_result = poly_fit(t, d, 2, measure_errors=measure_errors, sigma=sigma)
 
   ; Get the velocity and its error
-  velocity = result[1]
+  velocity = fit_result[1]
   velocity_error = sigma[1]
   velocity_result = [velocity, velocity_error]
 
   ; Acceleration and its error
-  acceleration = 2 * result[2]
+  acceleration = 2 * fit_result[2]
   acceleration_error = 2 * sigma[2]
   acceleration_result = [acceleration, acceleration_error]
 
@@ -226,7 +226,7 @@ movie[where(movie gt upper_limit)] = upper_limit
 ;
 ; Approximate duration of the jet
 ;
-jet_duration_index = [2 * 43 / tsum, 2 * 71 / tsum]
+jet_duration_index = [2 * 43 / tsum, 2 * 68 / tsum]
 
 ;
 ; Number of views of the jet.
@@ -240,7 +240,7 @@ t = 12.0 * tsum * findgen(njdi)
 ;
 ; Go through the images with the jet and get a location of the jet front
 ;
-nrepeat = 3
+nrepeat = 10
 pos = fltarr(nrepeat, njdi, 2)
 d = fltarr(nrepeat, njdi)
 for j = 0, nrepeat -1 do begin
@@ -265,6 +265,7 @@ d_sigma = stddev(d, dimension=1)
 ;
 ; Get the average x and y locations of the jet.
 ;
+
 x_average = mean(pos[*, *, 0], dimension=1)
 x_average = x_average - x_average[0]
 x_sigma = stddev(pos[*, *, 0], dimension=1)
@@ -276,14 +277,14 @@ y_sigma = stddev(pos[*, *, 1], dimension=1)
 ytitle = ['x position', 'y position']
 for win = 0,1 do begin
    window, win
-   plot, t, pos[*, *, win], xtitle='time', ytitle=ytitle[win]
+   plot, t, pos[0, *, win] - pos[0, 0, win], xtitle='time', ytitle=ytitle[win]
    for i = 1, nrepeat - 1 do begin
-      oplot, t, pos[i, *, win]
+      oplot, t, pos[i, *, win] - pos[i, 0, win]
    endfor
    if win eq 0 then begin
        oplot, t, x_average, thick=5
     endif else begin
-       oplot, y, y_average, thick=5
+       oplot, t, y_average, thick=5
     endelse
 endfor
 
@@ -299,7 +300,7 @@ dxy_sigma = 0.5 * sqrt( x_sigma^2 + y_sigma^2 )
 dxy_fit_poly = velocity_analysis(t, dxy_average, dxy_sigma, $
                                  velocity=dxy_velocity, $
                                  acceleration=dxy_acceleration, $
-                                 velocity_at_final_time=dxy_vaft)
+                                 v_at_final_time=dxy_vaft)
 ; distance according to the fit.
 dxy_average_fit = poly(t, dxy_fit_poly)
 
@@ -330,14 +331,15 @@ for i = 0, nloc - 1 do begin
 endfor
 
 ; Plot out the fit information
-format1 = '(F5.2)'
-format2 = '(F5.2)'
-xyouts, t[xloc], yloc[0], 'polyfit, Velocity (px/sec) = ' + STRING(velocity, FORMAT=format1)
-xyouts, t[xloc], yloc[1], 'polyfit, Acceleration (px/sec/sec) = ' + STRING(acceleration, FORMAT=format1)
+format1 = '(F9.5)'
+format2 = '(F9.5)'
+xloc=2
+xyouts, t[xloc], yloc[0], 'polyfit, Velocity (px/sec) = ' + STRING(dxy_velocity[0], FORMAT=format1)
+xyouts, t[xloc], yloc[1], 'polyfit, Acceleration (px/sec/sec) = ' + STRING(dxy_acceleration[0], FORMAT=format1)
 error_in_vaft = fltarr(2)
 error_in_vaft[0] = min(dxy_vaft) - dxy_vaft[1, 1] 
 error_in_vaft[1] = max(dxy_vaft) - dxy_vaft[1, 1] 
-xyouts, t[xloc], yloc[2], 'velocity at final time (px/sec) = ' + STRING(velocity_at_final_time[1], FORMAT=format2)
+xyouts, t[xloc], yloc[2], 'velocity at final time (px/sec) = ' + STRING(dxy_vaft[1], FORMAT=format2)
 xyouts, t[xloc], yloc[3], 'error in velocity at final time (px/sec) = ' + STRING(error_in_vaft[0], FORMAT=format2) + ' , ' + STRING(error_in_vaft[1], FORMAT=format2)
 
 
