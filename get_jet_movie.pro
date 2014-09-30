@@ -2,12 +2,31 @@
 ; Get a movie, either a running difference or a normal movie,
 ; from a directory containing a number of fits files.
 ;
-FUNCTION get_jet_movie, directory, tsum, sum, running_diff=running_diff
+FUNCTION get_jet_movie, searchable, tsum, sum, $
+                        running_diff=running_diff, $
+                        times_since_start=times_since_start, $
+                        cdelt=cdelt
 
 ; Read in the data
-  searchable = directory + '/*.fts'
   print, 'Looking for ' + searchable
   read_sdo,file_search(searchable),index,data
+
+; Size of the datacube
+  sz = size(data, /dim)
+  nx = sz[0]
+  ny = sz[1]
+  nt = sz[2]
+
+; Divide by the exposure time if need be
+  if index[0].instrume eq 'SECCHI' then begin
+     for i = 0, nt - 1 do begin
+        data[*, *, i] = data[*, *, i] / index[i].exptime
+     endfor
+  endif
+
+
+; Pixel size
+  cdelt = index[0].cdelt1
 
 ;
 ; Remove values less than zero
@@ -20,13 +39,6 @@ FUNCTION get_jet_movie, directory, tsum, sum, running_diff=running_diff
   xsum = sum
   ysum = sum
 
-
-; Size of the datacube
-  sz = size(data, /dim)
-  nx = sz[0]
-  ny = sz[1]
-  nt = sz[2]
-
 ; Define a movie array
   new_nt = nt / tsum - 1
   new_nx = nx / xsum - 1
@@ -36,7 +48,13 @@ FUNCTION get_jet_movie, directory, tsum, sum, running_diff=running_diff
 
 ; Summed data
      sdata = fltarr(new_nx, new_ny, new_nt)
+     times_since_start = fltarr(new_nt)
      for i = 0, new_nt -1 do begin
+;
+; Get the sample times
+;
+        times_since_start[i] = anytim2tai(index[(i + 1)*tsum - 1].date_obs) - anytim2tai(index[0].date_obs)
+
         if tsum ne 1 then begin
            sum_in_time = reform(total(data[*, *, i*tsum:(i+1)*tsum -1], 3))
         endif else begin
@@ -67,9 +85,17 @@ FUNCTION get_jet_movie, directory, tsum, sum, running_diff=running_diff
      new_nx = nx
      new_ny = ny
   endelse
-
 ;
-  movie = ji_ltez(movie, 0.00001)
+; Fix the times since the start so that they are all measured against
+; the first one
+;
+  times_since_start[*] = times_since_start[*] - times_since_start[0]
+;
+; Replace all values less that zero with a very small number
+;
+  if running_diff eq 0 then begin
+     movie = ji_ltez(movie, 0.00001)
+  endif
 
   return, movie
 END

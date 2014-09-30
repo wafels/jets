@@ -6,27 +6,43 @@
 directory = '~/Data/AIA/jets/selected/20110218/region1/94/'
 directory = '~/Data/AIA/jets/selected/20121120/region1/1.0/94'
 directory = '~/Data/AIA/jets/20121120/attempt1/1.0/94'
-directory = '~/Data/AIA/jets/20121120/attempt2/1.0/94'
+directory = '~/Data/AIA/jets/20121120/attempt2/1.0/94/*.fts'
+directory = '~/Data/jets/20121120/EUVI-A/195/*.fits'
 
 ;
 ; How the data will be viewed in movie form
 ;
-tsum = 2
-xsum = 3
-ysum = xsum
-running_diff = 0
+if directory eq '~/Data/jets/20121120/EUVI-A/195/*.fits' then begin
+   tsum = 1
+   xsum = 3
+   ysum = xsum
+   running_diff = 0
+   x_extent = [0, 340]
+   y_extent = [150, 490]
+endif
 
-;
-; Approximate duration of the jet
-;
-if directory eq '~/Data/AIA/jets/20121120/attempt2/1.0/94' then begin
+if directory eq '~/Data/AIA/jets/20121120/attempt2/1.0/94/*.fts' then begin
+   tsum = 2
+   xsum = 3
+   ysum = xsum
+   running_diff = 0
+   ; Approximate duration of the jet
    jet_duration_index = [2 * 43 / tsum, 2 * 68 / tsum]
 endif
 
 ;
 ; Get the data
 ;
-movie = get_jet_movie(directory, tsum, xsum, running_diff=running_diff)
+movie = get_jet_movie(directory, tsum, xsum, running_diff=running_diff, times_since_start=times_since_start, cdelt=cdelt)
+
+;
+; Cut it down if need be
+;
+if directory eq '~/Data/jets/20121120/EUVI-A/195/*.fits' then begin
+   movie = movie[x_extent[0]: x_extent[1], y_extent[0]: y_extent[1], *]
+endif
+
+
 
 ; Calculate a histogram of the movie.  This will let you determine
 ; good levels to clip the movie at
@@ -42,21 +58,31 @@ xh = min(movie) + binsize*findgen(n_elements(h))
 ; histogram
 lims = ji_calc_lim(xh, h, 0.99)
 lower_limit = lims[0]
-upper_limit = 500;lims[1]
+upper_limit = lims[1];500;lims[1]
 
 ; Clip the movie
 movie[where(movie lt lower_limit)] = lower_limit
 movie[where(movie gt upper_limit)] = upper_limit
 
+; Size of the movie
+sz = size(movie, /dim)
+nx = sz[0]
+ny = sz[1]
+nt = sz[2]
+
 ;
 ; Load the movie and play it
 ;
-;xinteranimate, set=[new_nx, new_ny, new_nt-1], /SHOWLOAD, /mpeg_open, mpeg_filename='test.mpg', mpeg_quality=90
+xinteranimate, set=[nx, ny, nt - 1], /SHOWLOAD
+;, /mpeg_open, mpeg_filename='test.mpg', mpeg_quality=90
 ; Run xinteranimate
-;for i = 0, new_nt-2 do begin
-;   xinteranimate, frame = i, image = bytscl(movie[*, *, i]) 
-;endfor
+for i = 0, nt - 2 do begin
+   xinteranimate, frame = i, image = bytscl(movie[*, *, i]) 
+endfor
 ;xinteranimate,/mpeg_close
+xinteranimate
+
+stop
 
 ;
 ; Number of views of the jet.
@@ -66,7 +92,7 @@ njdi = jet_duration_index[1] - jet_duration_index[0] + 1
 ;
 ; Time since the start of the jet
 ;
-t = 12.0 * tsum * findgen(njdi)
+t = times_since_start[jet_duration_index[0]:jet_duration_index[1]] - times_since_start[jet_duration_index[0]]
 ;
 ; Go through the images with the jet and get a location of the jet
 ; front, taking in to account the summing in the x and y directions. 
