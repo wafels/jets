@@ -1,4 +1,8 @@
-FUNCTION get_movie, directory, tsum, xsum, running_diff=running_diff
+;
+; Get a movie, either a running difference or a normal movie,
+; from a directory containing a number of fits files.
+;
+FUNCTION get_jet_movie, directory, tsum, sum, running_diff=running_diff
 
 ; Read in the data
   searchable = directory + '/*.fts'
@@ -9,6 +13,12 @@ FUNCTION get_movie, directory, tsum, xsum, running_diff=running_diff
 ; Remove values less than zero
 ;
   data = ji_ltez(data, 0.00001)
+
+;
+; Summation in the x and y directions
+;
+  xsum = sum
+  ysum = sum
 
 
 ; Size of the datacube
@@ -61,4 +71,5 @@ FUNCTION get_movie, directory, tsum, xsum, running_diff=running_diff
 ;
   movie = ji_ltez(movie, 0.00001)
 
-return, movie
+  return, movie
+END
