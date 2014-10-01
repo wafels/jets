@@ -2,14 +2,22 @@
 ; Get a movie, either a running difference or a normal movie,
 ; from a directory containing a number of fits files.
 ;
-FUNCTION get_jet_movie, searchable, tsum, sum, $
+FUNCTION get_jet_movie, instrument, searchable, tsum, sum, $
                         running_diff=running_diff, $
                         times_since_start=times_since_start, $
                         cdelt=cdelt
 
 ; Read in the data
   print, 'Looking for ' + searchable
-  read_sdo,file_search(searchable),index,data
+
+  if instrument eq 'AIA' then begin
+     read_sdo, file_search(searchable), index, data
+  endif
+
+  if instrument eq 'SECCHI' then begin
+     secchi_prep, file_search(searchable), index, data
+     stop
+  endif
 
 ; Size of the datacube
   sz = size(data, /dim)
@@ -17,25 +25,13 @@ FUNCTION get_jet_movie, searchable, tsum, sum, $
   ny = sz[1]
   nt = sz[2]
 
-; Divide by the exposure time if need be
-  if index[0].instrume eq 'SECCHI' then begin
-     for i = 0, nt - 1 do begin
-        data[*, *, i] = data[*, *, i] / index[i].exptime
-     endfor
-  endif
-
-
 ; Pixel size
   cdelt = index[0].cdelt1
 
-;
 ; Remove values less than zero
-;
   data = ji_ltez(data, 0.00001)
 
-;
 ; Summation in the x and y directions
-;
   xsum = sum
   ysum = sum
 
@@ -43,12 +39,12 @@ FUNCTION get_jet_movie, searchable, tsum, sum, $
   new_nt = nt / tsum - 1
   new_nx = nx / xsum - 1
   new_ny = ny / ysum - 1
+  times_since_start = fltarr(new_nt)
   if tsum + xsum + ysum ne 3 then begin
      movie = fltarr(new_nx, new_ny, new_nt-1)
 
 ; Summed data
      sdata = fltarr(new_nx, new_ny, new_nt)
-     times_since_start = fltarr(new_nt)
      for i = 0, new_nt -1 do begin
 ;
 ; Get the sample times
@@ -62,7 +58,7 @@ FUNCTION get_jet_movie, searchable, tsum, sum, $
         endelse
         for j = 0, new_nx - 1 do begin
            for k = 0, new_ny - 1 do begin
-              sdata[j, k, i] = total(sum_in_time[j*xsum:(j+1)*xsum, k*ysum:(k+1)*ysum]) 
+              sdata[j, k, i] = total(sum_in_time[j*xsum: (j+1)*xsum - 1, k*ysum:(k+1)*ysum - 1]) 
            endfor
         endfor
      endfor
@@ -70,12 +66,13 @@ FUNCTION get_jet_movie, searchable, tsum, sum, $
         if running_diff eq 1 then begin
            movie[*,*,i] = sdata[*, *, i + 1] - sdata[*, *, i]
         endif else begin
-           movie[*,*,i] = alog(sdata[*, *, i])
+           movie[*,*,i] = (sdata[*, *, i])
         endelse
      endfor
   endif else begin
      movie = fltarr(nx, ny, nt-1)
      for i = 0, new_nt-2 do begin
+        times_since_start[i] = anytim2tai(index[i].date_obs) - anytim2tai(index[0].date_obs)
         if running_diff eq 1 then begin
            movie[*,*,i] = data[*, *, i + 1] - data[*, *, i]
         endif else begin

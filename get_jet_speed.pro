@@ -13,15 +13,18 @@ directory = '~/Data/jets/20121120/EUVI-A/195/*.fits'
 ; How the data will be viewed in movie form
 ;
 if directory eq '~/Data/jets/20121120/EUVI-A/195/*.fits' then begin
+   instrument = 'SECCHI'
    tsum = 1
-   xsum = 3
+   xsum = 1
    ysum = xsum
    running_diff = 0
-   x_extent = [0, 340]
-   y_extent = [150, 490]
+   x_extent = 3 * [0, 340] / xsum
+   y_extent = 3 * [150, 490] / xsum
+   jet_duration_index = [0, 10] / tsum
 endif
 
 if directory eq '~/Data/AIA/jets/20121120/attempt2/1.0/94/*.fts' then begin
+   instrument = 'AIA'
    tsum = 2
    xsum = 3
    ysum = xsum
@@ -33,16 +36,14 @@ endif
 ;
 ; Get the data
 ;
-movie = get_jet_movie(directory, tsum, xsum, running_diff=running_diff, times_since_start=times_since_start, cdelt=cdelt)
+movie = get_jet_movie(instrument, directory, tsum, xsum, running_diff=running_diff, times_since_start=times_since_start, cdelt=cdelt)
 
 ;
-; Cut it down if need be
+; Cut the movie down if need be
 ;
 if directory eq '~/Data/jets/20121120/EUVI-A/195/*.fits' then begin
    movie = movie[x_extent[0]: x_extent[1], y_extent[0]: y_extent[1], *]
 endif
-
-
 
 ; Calculate a histogram of the movie.  This will let you determine
 ; good levels to clip the movie at
@@ -73,16 +74,15 @@ nt = sz[2]
 ;
 ; Load the movie and play it
 ;
-xinteranimate, set=[nx, ny, nt - 1], /SHOWLOAD
+;xinteranimate, set=[nx, ny, nt - 1], /SHOWLOAD
 ;, /mpeg_open, mpeg_filename='test.mpg', mpeg_quality=90
 ; Run xinteranimate
-for i = 0, nt - 2 do begin
-   xinteranimate, frame = i, image = bytscl(movie[*, *, i]) 
-endfor
+;for i = 0, nt - 2 do begin
+;   xinteranimate, frame = i, image = bytscl(movie[*, *, i]) 
+;endfor
 ;xinteranimate,/mpeg_close
-xinteranimate
+;xinteranimate,/keep_pixmaps
 
-stop
 
 ;
 ; Number of views of the jet.
