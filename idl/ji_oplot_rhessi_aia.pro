@@ -16,6 +16,8 @@ percent_levels = [0.95, 0.90, 0.68, 0.50]
 levels = max(rmap_of_interest.data) * percent_levels
 nlevels = n_elements(levels)
 
+rxrange = rmap_of_interest.xc - rmap_of_interest.dx * [-0.5 * shape[0], + 0.5 * shape[0]]
+ryrange = rmap_of_interest.yc - rmap_of_interest.dy * [-0.5 * shape[1], + 0.5 * shape[1]]
 
 ;
 ; Define the AIA data
@@ -37,17 +39,24 @@ aia = {w94: {filename: 'aia.lev1.94A_2012-11-20T08_09_01.12Z.image_lev1.fits', c
 wchannel = tag_names(aia)
 for i = 0, n_elements(wchannel) - 1 do begin
 
+    ; New window
     window,i
+
+    ; Channel and filename
     channel = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
     filename = gt_tagval(gt_tagval(aia, wchannel[i]), 'filename')
 
+    ; Define the file and load in the object
     channel_string = strtrim(string(channel), 1)
     aia_data = dir + '/aia/' + channel_string + '/' + filename
     aobj = obj_new('aia')
     aobj -> read, aia_data
     aia_map = aobj->get(/map)
-    sub_map, aia_map, aia_smap, xrange = [600, 1000], yrange=[-400, 0]
 
+    ; Get the submap which overlays the RHESSI data
+    sub_map, aia_map, aia_smap, xrange = rxrange, yrange=ryrange
+
+    ; Create the image and dump it to file.
     ps,imgdir + '/' + channel_string + '.eps', /color, /copy, /encapsulated
     aia_lct, r, g, b, wavelnth=channel, /load
     plot_map,aia_smap, /log
@@ -55,5 +64,34 @@ for i = 0, n_elements(wchannel) - 1 do begin
     psclose
 
 endfor
+
+;
+; Now do some analysis using the RHESSI contours and the AIA data.  Sum up the
+; total emission inside the RHESSI contour
+;
+for i = 0, n_elements(wchannel) - 1 do begin
+    ; Channel
+    channel = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
+
+    ; Define the file and load in the object
+    channel_string = strtrim(string(channel), 1)
+
+    ; Get a list of files in that directory
+
+
+    ; Load in each file
+    nfiles = n_elements(filelist)
+    for i = 0, nfiles - 1 do begin
+
+        ; Go through each contour and sum the emission inside that
+        ; contour
+        for j = 0, nlevels -1 do begin
+
+        endfor
+    endfor
+
+    ; Create a plot of the average emission as a function of time in this
+    ; channel for each contour.
+
 
 END
