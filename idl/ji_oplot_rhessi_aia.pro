@@ -3,7 +3,14 @@
 ;
 dir = '~/Data/jets/2012-11-20'
 imgdir = '~/jets/img'
-maxnfiles = 50
+maxnfiles = 100
+
+;
+; Time of RHESSI observed flare maximum
+;
+time_of_rhessi_maximum = '2012/11/20 08:09:02'
+
+
 
 ;
 ; Define the RHESSI data
@@ -87,7 +94,7 @@ endfor
 emission = fltarr(nwchannel, maxnfiles, nlevels) - 1
 avemission = fltarr(nwchannel, maxnfiles, nlevels) - 1
 remission = fltarr(nwchannel, maxnfiles) - 1
-time = 12.0 * findgen(maxnfiles)
+time = findgen(maxnfiles)
 
 ;
 ; Go through each channel and each file, and each contour level to get the
@@ -122,9 +129,12 @@ for i = 0, nwchannel - 1 do begin
         total_resampled = total(resampled)
         remission[i, j] = total_aia_map / (64 * 64 * 1.0)
 
+        ; Get time relative to the initial time of each file
         if j eq 0 then begin
             initial_time_string[i] = aia_map.time
+            relative_time_of_flare_maximum = anytim2tai(time_of_rhessi_maximum) - anytim2tai(initial_time_string[i])
         endif
+        time[j] = anytim2tai(aia_map.time) - anytim2tai(initial_time_string[i])
 
         ; Go through each contour and sum the emission inside that
         ; contour
@@ -161,11 +171,13 @@ for i = 0, nwchannel - 1 do begin
     p = plot(time[nonzero], remission_aia[nonzero], linestyle=nlevels, $
             /overplot, name='total AIA emission in RHESSI image (64 x 64 px)')
     plist.add, p
+    p = plot([relative_time_of_flare_maximum, relative_time_of_flare_maximum], $
+              p.yrange, /overplot, name='time of peak of flare (RHESSI)', thick=2)
+    plist.add, p
 
     ; Finish the plot
     myLegend = legend(TARGET=plist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
             transparency=50.0)
-
 
 ENDFOR
 END
