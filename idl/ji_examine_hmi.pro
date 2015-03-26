@@ -55,12 +55,15 @@ aia = {w94: {filename: 'aia.lev1.94A_2012-11-20T08_09_01.12Z.image_lev1.fits', c
 ; HMI: define the filenames at the peak of RHESSI flare
 hmi = {magnetogram: {filename: '???', channel: 'magnetogram'}}
 
-; Define the area over which to do some more targeted data analysis
-hmi_xrange = [,]
-hmi_yrange = [,]
+; HMI: Define the area over which to do some more targeted data analysis
+bip_xrange = [200, 300]
+bip_yrange = [400, 500]
 
 ; Put all the data in to one big structure
 all_data = {hmi: hmi, aia: aia}
+
+; Clip levels for the data
+data_clip = {hmi: [10.0, 1000.0]}
 
 ;
 ; Which data to look at
@@ -217,84 +220,59 @@ for i = 0, nwchannel - 1 do begin
     endelse
     ; Overplot the RHESSI map as a set of contours
     plot_map, rmap_of_interest, /over, levels=levels, c_color=255
+    ; Overplot the HMI square we are interested in (where th bipole is)
+    ji_plot_square_data, bip_xrange, bip_yrange
     psclose
-
 
 endfor
 
-
-
-
 ;
-; Go through each channel and each file, and each contour level to get the
-; emission inside the RHESSI contour as a function of time and channel.
+; Now make a movie of the data
 ;
-for i = 0, nwchannel - 1 do begin
-    print,'Channel ', i, nwchannel - 1
-    ; Channel
-    channel = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
+xinteranimate, /close
+xinteranimate, set = [sz[0], sz[1], nflist], /showload
+levels = gt_tagval(data_clip, data_type)
+for i = 0, nflist - 1 do begin
+   img = reform(movie_data[*, *, i])
 
-    ; Define the file and load in the object
-    channel_string = strtrim(string(channel), 1)
+   lti = where(img lt levels[0])
+   img[lti] = levels[0]
 
-    ; Get a list of files in that directory
-    aia_dir = dir + '/aia/' + channel_string
-    flist = file_list(aia_dir)
+   gti = where(img gt levels[1])
+   img[gti] = levels[1]
 
-    ; Load in each file
-    nfiles = n_elements(flist)
-    for j = 0, nfiles - 1 do begin
-        ; Next file
-        filename = flist[j]
-        aobj = obj_new('aia')
-        aobj -> read, filename
-        aia_map = aobj->get(/map)
+   if data_type eq 'aia' then begin
+      show_this = alog(img)
+   endif else begin
+      show_this = img
+   endelse
 
-        ; Get the submap which overlays the RHESSI data
-        sub_map, aia_map, aia_smap, xrange = rxrange, yrange=ryrange
-        aia_data = aia_smap.data
-        total_aia_map = total(aia_data)
-        resampled = congrid(aia_data, 64, 64,/interp)
-        total_resampled = total(resampled)
-        remission[i, j] = total_aia_map / (64 * 64 * 1.0)
+   xinteranimate, frame=i, image=bytscl(show_this)
+
+endfor
+xinteranimate, /keep_pixmaps
 
 
+END
 
-        ; Go through each contour and sum the emission inside that
-        ; contour
-        for k = 0, nlevels -1 do begin
-            w = where(rmap_of_interest.data ge levels[k])
-            npix_per_level[k] = n_elements(w)
-            emission[i, j, k] = total(aia_data[w]) * total_aia_map / total_resampled
-            avemission[i, j, k] = emission[i, j, k]/ (1.0 *n_elements(w))
-        endfor
-    endfor
+PRO ji_plot_square_data, xr, yr, linestyle=linestyle, thick=thick
+  ;
+  ; Plot a square in data co-ordinates.  Assumes that
+  ; xr gives the xrange of the square, and that
+  ; yr gives the yrange of the square
+  ;
 
-    ; Create a plot of the average emission as a function of time in this
-    ; channel for each contour.
-    thischannel = reform(avemission[i, *, *])
-    for k = 0, nlevels -1 do begin
-        data = reform(thischannel[*, k])
-        nonzero = where(data gt 0.0)
-        name = percent_levels_string[k] + ' (' + strtrim(npix_per_level[k], 1) + ' px)'
-        if k eq 0 then begin
-            p = plot(time[nonzero], data[nonzero], linestyle=k, $
-                    xtitle='time (seconds) since ' + initial_time_string[i],$
-                    ytitle='average emission',$
-                    title=channel_string, name=name)
-            plist = LIST(p)
-        endif else begin
-            p = plot(time[nonzero], data[nonzero], linestyle=k, /overplot, name=name)
-            plist.add, p
-        endelse
-    endfor
+  ; Lower horizontal line
+  plots,[xr[0], xr[1]], [yr[0], yr[0]], /data, linestyle=linestyle, thick=thick
 
-    ; Inside the RHESSI reconstructed field of view
-    remission_aia = reform(remission[i, *])
-    nonzero = where(remission_aia gt 0.0)
-    p = plot(time[nonzero], remission_aia[nonzero], linestyle=nlevels, $
-            /overplot, name='total AIA emission in RHESSI image (64 x 64 px)')
-    plist.add, p
+  ; Upper horizontal line
+  plots,[xr[0], xr[1]], [yr[1], yr[1]], /data, linestyle=linestyle, thick=thick
 
-ENDFOR
+  ; Left hand vertical line
+  plots,[xr[0], xr[0]], [yr[0], yr[0]], /data, linestyle=linestyle, thick=thick
+
+  ; Right hand vertical line
+  plots,[xr[0], xr[0]], [yr[1], yr[1]], /data, linestyle=linestyle, thick=thick
+
+return
 END
