@@ -68,6 +68,10 @@ all_data = {hmi: hmi, aia: aia}
 analyze_this = gt_tagval(all_data, data_type)
 nwchannel = n_elements(analyze_this)
 ;
+; Set up some storage arrays
+;
+initial_time_string = strarr(nwchannel)
+;
 ; Analyze the image data in the RHESSI FOV
 ;
 for i = 0, nwchannel - 1 do begin
@@ -88,8 +92,14 @@ for i = 0, nwchannel - 1 do begin
 
     ; Define some data storage arrays
     absolute_flux = fltarr(nflist)
+    naf = fltarr(nflist)
+
     positive_flux = fltarr(nflist)
+    nwp = fltarr(nflist)
+
     negative_flux = fltarr(nflist)
+    nwn = fltarr(nflist)
+
     net_flux = fltarr(nflist)
 
     ; Go through all the files
@@ -148,12 +158,66 @@ for i = 0, nwchannel - 1 do begin
        ; relative to the time of the first file in our list
         if j eq 0 then begin
             initial_time_string[i] = fmap.time
-            relative_time_of_flare_maximum = anytim2tai(time_of_rhessi_maximum) - anytim2tai(initial_time_string[i])
+            relative_time_of_flare_maximum[i] = anytim2tai(time_of_rhessi_maximum) - anytim2tai(initial_time_string[i])
         endif
         time[j] = anytim2tai(fmap.time) - anytim2tai(initial_time_string[i])
     endfor
 
-    ; Make plots of all the flux
+    ;
+    ; Make plots of all the flux measurements
+    ;
+    p = plot(time, absolute_flux, linestyle=0, $
+             xtitle='time (seconds) since ' + initial_time_string[i],$
+             ytitle='average emission',$
+             title=channel_string, name='absolute flux')
+    plist = LIST(p)
+    p = plot(time, positive_flux, linestyle=1, /overplot, name='positive flux')
+    plist.add, p
+    p = plot(time, negative_flux, linestyle=2, /overplot, name='negative flux')
+    plist.add, p
+    p = plot(time, net_flux, linestyle=3, /overplot, name='net flux')
+    plist.add, p
+    p = plot([relative_time_of_flare_maximum[i], relative_time_of_flare_maximum[i]], $
+              p.yrange, /overplot, name='time of peak of flare (RHESSI)', thick=4)
+    plist.add, p
+
+    ; Finish the plot
+    myLegend = legend(TARGET=plist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
+            transparency=50.0)
+
+    ;
+    ; Make plots of the number of pixels in the flux measurements
+    ;
+    q = plot(time, nwp, linestyle=0, $
+             xtitle='time (seconds) since ' + initial_time_string[i],$
+             ytitle='number of pixels',$
+             title=channel_string, name='positive flux')
+    qlist = LIST(q)
+    q = plot(time, nwn, linestyle=1, /overplot, name='negative flux')
+    qlist.add, q
+    q = plot([relative_time_of_flare_maximum[i], relative_time_of_flare_maximum[i]], $
+              q.yrange, /overplot, name='time of peak of flare (RHESSI)', thick=4)
+    qlist.add, q
+
+    ; Finish the plot
+    myLegend = legend(TARGET=plist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
+            transparency=50.0)
+
+    ;
+    ; Show the image data with the region overplotted and the RHESSI contours
+    ;
+    ps,imgdir + '/' + channel_string + '.eps', /color, /copy, /encapsulated
+    ; Expected colors and scaling
+    if data_type eq 'aia' then begin
+       aia_lct, r, g, b, wavelnth=channel, /load
+       plot_map,fmap, /log
+    endif else begin
+       loadct,0
+       plot_map,fmap
+    endelse
+    ; Overplot the RHESSI map as a set of contours
+    plot_map, rmap_of_interest, /over, levels=levels, c_color=255
+    psclose
 
 
 endfor
@@ -231,13 +295,6 @@ for i = 0, nwchannel - 1 do begin
     p = plot(time[nonzero], remission_aia[nonzero], linestyle=nlevels, $
             /overplot, name='total AIA emission in RHESSI image (64 x 64 px)')
     plist.add, p
-    p = plot([relative_time_of_flare_maximum, relative_time_of_flare_maximum], $
-              p.yrange, /overplot, name='time of peak of flare (RHESSI)', thick=2)
-    plist.add, p
-
-    ; Finish the plot
-    myLegend = legend(TARGET=plist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
-            transparency=50.0)
 
 ENDFOR
 END
