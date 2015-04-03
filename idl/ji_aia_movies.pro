@@ -3,7 +3,7 @@
 ;
 dir = '~/Data/jets/2012-11-20'
 imgdir = '~/jets/img'
-maxnfiles = 50
+maxnfiles = 150
 
 ;
 ; Define the RHESSI data
@@ -29,6 +29,11 @@ npix_per_level_string = strarr(nlevels)
 ; Range of the data
 rxrange = rmap_of_interest.xc + rmap_of_interest.dx * [-0.5 * shape[0], + 0.5 * shape[0]]
 ryrange = rmap_of_interest.yc + rmap_of_interest.dy * [-0.5 * shape[1], + 0.5 * shape[1]]
+
+; Expand the x and y directions
+rxrange[1] = rxrange[1] + 200.0
+ryrange[1] = ryrange[1] + 200.0
+
 
 ;
 ; Define the AIA data

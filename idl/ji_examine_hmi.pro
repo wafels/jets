@@ -13,7 +13,7 @@ dir = '~/Data/jets/2012-11-20'
 imgdir = '~/jets/img'
 
 ; Maximum number of AIA or HMI files in each channel
-maxnfiles = 100
+maxnfiles = 150
 
 ; RHESSI: time of RHESSI observed flare maximum
 time_of_rhessi_maximum = '2012/11/20 08:09:02'
@@ -53,23 +53,28 @@ aia = {w94: {filename: 'aia.lev1.94A_2012-11-20T08_09_01.12Z.image_lev1.fits', c
     w1700: {filename: 'aia.lev1.1700A_2012-11-20T08_08_54.71Z.image_lev1.fits', channel: 1700}}
 
 ; HMI: define the filenames at the peak of RHESSI flare
-hmi = {magnetogram: {filename: '???', channel: 'magnetogram'}}
+hmi = {magnetogram: {filename: 'hmi.m_45s.2012.11.20_08_09_00_TAI.magnetogram.fits', channel: 'magnetogram'}}
 
 ; HMI: Define the area over which to do some more targeted data analysis
-bip_xrange = [200, 300]
-bip_yrange = [400, 500]
+bip_xrange = [730, 800]
+bip_yrange = [-250, -180]
+new_bip_xsize = 600
+new_bip_ysize = 600
+
 
 ; Put all the data in to one big structure
 all_data = {hmi: hmi, aia: aia}
 
 ; Clip levels for the data
-data_clip = {hmi: [10.0, 1000.0]}
+data_clip = {hmi: [-300.0, 300.0]}
 
 ;
 ; Which data to look at
 ;
 analyze_this = gt_tagval(all_data, data_type)
+wchannel = tag_names(analyze_this)
 nwchannel = n_elements(analyze_this)
+relative_time_of_flare_maximum = fltarr(nwchannel)
 ;
 ; Set up some storage arrays
 ;
@@ -105,6 +110,8 @@ for i = 0, nwchannel - 1 do begin
 
     net_flux = fltarr(nflist)
 
+    time = fltarr(nflist)
+
     ; Go through all the files
     for j = 0, nflist - 1 do begin
 
@@ -114,11 +121,14 @@ for i = 0, nwchannel - 1 do begin
        fmap = fobj -> get(/map)
 
        ; Get the submap which overlays the RHESSI data
-       sub_map, fmap, fsmap, xrange = rxrange, yrange=ryrange
+       sub_map, fmap, frsmap, xrange = rxrange, yrange=ryrange
+
+       ; Get the submap which overlays the bipole
+       sub_map, fmap, fsmap, xrange = bip_xrange, yrange=bip_yrange
 
        ; Get the first file to define the size of the HMI cutout
        if j eq 0 then begin
-          sz = size(fmap.data, /dimensions)
+          sz = size(fsmap.data, /dimensions)
           movie_data = fltarr(sz[0], sz[1], nflist)
        endif
 
@@ -140,7 +150,7 @@ for i = 0, nwchannel - 1 do begin
        wp = where(fsmap_data gt 0.0)
        if wp[0] ne -1 then begin
           nwp[j] = n_elements(wp)
-          positive_flux[j] = total(fsmap_data_wp[wp])
+          positive_flux[j] = total(fsmap_data[wp])
        endif else begin
           positive_flux[j] = -1
        endelse
@@ -149,13 +159,13 @@ for i = 0, nwchannel - 1 do begin
        wn = where(fsmap_data lt 0.0)
        if wn[0] ne -1 then begin
           nwn[j] = n_elements(wn)
-          negative_flux[j] = -total(fsmap_data_wn[wn])
+          negative_flux[j] = -total(fsmap_data[wn])
        endif else begin
           negative_flux[j] = -1
        endelse
 
        ; Net flux
-       net_flux = total(fsmap_data)
+       net_flux[j] = total(fsmap_data)
        
        ; Get the time of the peak of the RHESSI flare time
        ; relative to the time of the first file in our list
@@ -203,7 +213,7 @@ for i = 0, nwchannel - 1 do begin
     qlist.add, q
 
     ; Finish the plot
-    myLegend = legend(TARGET=plist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
+    myLegend = legend(TARGET=qlist, /DATA, /AUTO_TEXT_COLOR, FONT_SIZE=10, $
             transparency=50.0)
 
     ;
@@ -213,10 +223,10 @@ for i = 0, nwchannel - 1 do begin
     ; Expected colors and scaling
     if data_type eq 'aia' then begin
        aia_lct, r, g, b, wavelnth=channel, /load
-       plot_map,fmap, /log
+       plot_map,fsmap, /log
     endif else begin
        loadct,0
-       plot_map,fmap
+       plot_map,fsmap
     endelse
     ; Overplot the RHESSI map as a set of contours
     plot_map, rmap_of_interest, /over, levels=levels, c_color=255
@@ -229,8 +239,7 @@ endfor
 ;
 ; Now make a movie of the data
 ;
-xinteranimate, /close
-xinteranimate, set = [sz[0], sz[1], nflist], /showload
+xinteranimate, set = [new_bip_xsize, new_bip_ysize, nflist], /showload
 levels = gt_tagval(data_clip, data_type)
 for i = 0, nflist - 1 do begin
    img = reform(movie_data[*, *, i])
@@ -246,6 +255,8 @@ for i = 0, nflist - 1 do begin
    endif else begin
       show_this = img
    endelse
+
+   show_this = congrid(show_this, new_bip_xsize, new_bip_ysize)
 
    xinteranimate, frame=i, image=bytscl(show_this)
 
