@@ -219,7 +219,7 @@ for i = 0, nwchannel - 1 do begin
    psclose
 
 endfor
-wdelete, 
+wdelete, 0
 
 ;
 ; Get the emission as a function of time for the jet mask
