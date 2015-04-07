@@ -8,7 +8,6 @@ maxnfiles = 100
 
 ; Get the time of this run
 get_utc,utc,/ccsds
-;spawn,'sudo mkdir + 
 
 ;
 ; RHESSI: Time of RHESSI observed flare maximum
@@ -60,15 +59,28 @@ ny = ceil((ryrange[1] - ryrange[0])/0.6)
 ;
 ; AIA: define the AIA data
 ;
-aia = {w94: {filename: 'aia.lev1.94A_2012-11-20T08_09_01.12Z.image_lev1.fits', channel: 94}, $
-    w131: {filename: 'aia.lev1.131A_2012-11-20T08_09_08.62Z.image_lev1.fits', channel: 131}, $
-    w171: {filename: 'aia.lev1.171A_2012-11-20T08_08_59.34Z.image_lev1.fits', channel: 171}, $
-    w193: {filename: 'aia.lev1.193A_2012-11-20T08_09_06.84Z.image_lev1.fits', channel: 193}, $
-    w211: {filename: 'aia.lev1.211A_2012-11-20T08_08_59.63Z.image_lev1.fits', channel: 211}, $
-    w304: {filename: 'aia.lev1.304A_2012-11-20T08_09_07.12Z.image_lev1.fits', channel: 304}, $
-    w335: {filename: 'aia.lev1.335A_2012-11-20T08_09_02.63Z.image_lev1.fits', channel: 335}, $
-    w1600: {filename: 'aia.lev1.1600A_2012-11-20T08_09_04.12Z.image_lev1.fits', channel: 1600}, $
-    w1700: {filename: 'aia.lev1.1700A_2012-11-20T08_08_54.71Z.image_lev1.fits', channel: 1700}}
+;aia = {w94: {filename: 'aia.lev1.94A_2012-11-20T08_09_01.12Z.image_lev1.fits', channel: 94}, $
+;    w131: {filename: 'aia.lev1.131A_2012-11-20T08_09_08.62Z.image_lev1.fits', channel: 131}, $
+;    w171: {filename: 'aia.lev1.171A_2012-11-20T08_08_59.34Z.image_lev1.fits', channel: 171}, $
+;    w193: {filename: 'aia.lev1.193A_2012-11-20T08_09_06.84Z.image_lev1.fits', channel: 193}, $
+;    w211: {filename: 'aia.lev1.211A_2012-11-20T08_08_59.63Z.image_lev1.fits', channel: 211}, $
+;    w304: {filename: 'aia.lev1.304A_2012-11-20T08_09_07.12Z.image_lev1.fits', channel: 304}, $
+;    w335: {filename: 'aia.lev1.335A_2012-11-20T08_09_02.63Z.image_lev1.fits', channel: 335}, $
+;    w1600: {filename: 'aia.lev1.1600A_2012-11-20T08_09_04.12Z.image_lev1.fits', channel: 1600}, $
+;    w1700: {filename: 'aia.lev1.1700A_2012-11-20T08_08_54.71Z.image_lev1.fits', channel: 1700}}
+
+aia = {w94: {filename: 'AIA20121120_080901_0094.fits', channel: 94}, $
+    w131: {filename: 'AIA20121120_080908_0131.fits', channel: 131}, $
+    w171: {filename: 'AIA20121120_080859_0171.fits', channel: 171}, $
+    w193: {filename: 'AIA20121120_080906_0193.fits', channel: 193}, $
+    w211: {filename: 'AIA20121120_080859_0211.fits', channel: 211}, $
+    w304: {filename: 'AIA20121120_080907_0304.fits', channel: 304}, $
+    w335: {filename: 'AIA20121120_080902_0335.fits', channel: 335}, $
+    w1600: {filename: 'AIA20121120_080904_1600.fits', channel: 1600}, $
+    w1700: {filename: 'AIA20121120_080854_1700.fits', channel: 1700}}
+
+
+aia_filepath = dir + '/aia/1.5/'
 
 ;
 ; AIA channel names and number of channels
@@ -107,7 +119,7 @@ filename = gt_tagval(gt_tagval(aia, wchannel[i]), 'filename')
 channel_string = strtrim(string(channel), 1)
 
 ; Full filepath
-filepath = dir + '/aia/' + channel_string + '/' + filename
+filepath = aia_filepath + channel_string + '/' + filename
 
 ; Define the file and load in the object
 aobj = obj_new('aia')
@@ -157,7 +169,7 @@ for i = 0, nwchannel - 1 do begin
    ; Define the file and load in the object
    channel_string = strtrim(string(channel), 1)
    ; Full filepath
-   filepath = dir + '/aia/' + channel_string + '/' + filename
+   filepath = aia_filepath + channel_string + '/' + filename
    ; Define the file and load in the object
    aobj = obj_new('aia')
    aobj -> read, filepath
@@ -196,7 +208,7 @@ for i = 0, nwchannel - 1 do begin
    ; Define the file and load in the object
    hchannel_string = strtrim(string(hchannel), 1)
    ; Full filepath
-   hfilepath = dir + '/hmi/' + hchannel_string + '/' + hfilename
+   hfilepath = dir + '/hmi/1.0/' + hchannel_string + '/' + hfilename
    ; Define the file and load in the object
    hobj = obj_new('hmi')
    hobj -> read, hfilepath
@@ -232,7 +244,7 @@ time_string = strarr(nwchannel, maxnfiles)
 for i = 0, nwchannel - 1 do begin
    ; Get the image at the peak of the flare and overplot the mask outline
    filename = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
-   aia_dir = dir + '/aia/' + filename
+   aia_dir = aia_filepath + filename
 
    ; Channel and filename
    channel = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
@@ -241,7 +253,7 @@ for i = 0, nwchannel - 1 do begin
     channel_string = strtrim(string(channel), 1)
 
     ; Get a list of files in that directory
-    aia_dir = dir + '/aia/' + channel_string
+    aia_dir = aia_filepath + channel_string
     flist = file_list(aia_dir)
     nfiles = n_elements(flist)
 
