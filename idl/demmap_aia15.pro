@@ -6,8 +6,10 @@
 ;
 ; The code saves the output to an output directory for later analysis.
 ;
+requested_time = '2012-11-20 01:30:00'
+
 ; Set up which data we are going to use
-data_source = '~/Data/jets'
+data_source = '/home/ireland/Data/jets'
 output_root = '~/jets/sav'
 jet_date = '2012-11-20'
 jet_number = 0
@@ -32,10 +34,10 @@ prt = '_'
   ; Also note the int to float for the AIA data is done during the rebinning
   ; If not rebinning still need to do this.
   ; Assumes you have a directory with some AIA v1.5 fits in it of all six coronal channels
-jet_number_string = 'jet' + prt + string(jet_number)
+jet_number_string = 'jet' + prt + strtrim(string(jet_number), 1)
 
 ; Where the input data is
-fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/cutouts/1.5'
+fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/cutouts/1.0'
 
 ; Where the output data will be stored
 odir = output_root + sep + jet_date + sep + jet_number_string
@@ -47,40 +49,53 @@ fname = jet_date + prt + jet_number_string + '.sav'
 output_filepath = odir + sep + fname
 
 ; AIA channels we will use
-waves = ['094', '131', '171', '193', '211', '335']
+waves = ['94', '131', '171', '193', '211', '335']
 
 ; Get the file names and the times
 ddd = dictionary()
 nwaves = n_elements(waves)
-for j = 0, nwaves-1 do begin
+for i = 0, nwaves-1 do begin
    wave = waves[i]
    search_term = '*' + wave + '_.fts'
-   f = file_search(fdir, search_term)
+   print,'Searching ' + fdir + ' for ' + search_term
+   f = file_search(fdir, search_term, count=count)
+   if count eq 0 then begin
+      print,"None of the required files are present.  Stopping."
+      stop
+   endif
    nf = n_elements(f)
+   print,'Number of files = ', nf
    ddd("filename_" + wave) = f
    ddd("obstime_" + wave) = dblarr(nf)
-   for i = 0, nf-1 do begin
-      ddd("obstime_" + wave) = function(f[i])
+   for j = 0, nf-1 do begin
+      ss = strsplit(f[j], sep, /extract)
+      ssf =  strsplit(ss[-1], '_', /extract)
+      date_time = ssf[2] + '_' + ssf[3]
+      ddd("obstime_" + wave) = anytim2tai(date_time)
    endfor
 endfor
 
-requested_time = function('2012-11-20 01:30:00')
+; Get the time we are interested in
+this_time = anytim2tai(requested_time)
 
 ; Get the nearest files to the requested times
-wave_indices = intarr(nwaves)
+wave_filenames = strarr(nwaves)
 for j = 0, nwaves-1 do begin
-   wave = waves[i]
+   wave = waves[j]
    index = "obstime_" + wave
-   time_diff = ddd(index) - requested_time
+   time_diff = abs(ddd(index) - this_time)
+   min_time_diff_index = (where(time_diff eq min(time_diff)))[0]
+   wave_filenames[j] = (ddd("filename_" + wave))[min_time_diff_index]
 endfor
+
    
-f094=file_search(fdir, '*94_.fts')
-f131=file_search(fdir, '*131_.fts')
-f171=file_search(fdir, '*171_.fts')
-f193=file_search(fdir, '*193_.fts')
-f211=file_search(fdir, '*211_.fts')
-f335=file_search(fdir, '*335_.fts')
-ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
+;f094=file_search(fdir, '*94_.fts')
+;f131=file_search(fdir, '*131_.fts')
+;f171=file_search(fdir, '*171_.fts')
+;f193=file_search(fdir, '*193_.fts')
+;f211=file_search(fdir, '*211_.fts')
+;f335=file_search(fdir, '*335_.fts')
+;ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
 
   ;
   ;  for i=0, nf-1 do begin
@@ -97,15 +112,30 @@ ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
   ;     map2fits,rmap,fdir+'test_aia15_1024_'+waves[i]+'A.fts'
   ;  endfor
 
-  ; Load the data
-  f2 = file_search(fdir, '*A.fts')
-  fits2map, f2, mm
+  ; Get the size of each image.  Need to check image size
+  ; since the images can be very slightly different
+  dim = fltarr(nwaves, 2)
+  for i=0, nwaves-1 do begin
+     fits2map, wave_filenames[i], this_map
+     dim[i, *] = size(this_map.data, /dim)
+  endfor
+  new_nx = min(dim(*,0))
+  new_ny = min(dim(*,1))
+
+  ; Resize the data in order to get a uniform data cube
+  dn0 = dblarr(new_nx, new_ny, nwaves)
+  durs = dblarr(nwaves)
+  for i=0, nwaves-1 do begin
+     fits2map, wave_filenames[i], this_map
+     dn0[*, *, i] = congrid(this_map.data, new_nx, new_ny)
+     durs[i] = this_map.dur
+  endfor
 
   ; Setup the data for input to DEMREG code
-  dn0 = mm.data
-  durs = mm.dur
+  ;dn0 = mm.data
+  ;durs = mm.dur
   ; Get into DN/s/px
-  for i=0, nf-1 do begin
+  for i=0, nwaves-1 do begin
      dn0[*, *, i] = dn0[*, *, i]/durs[i]
   endfor
   na = n_elements(dn0[*, 0, 0])
@@ -116,12 +146,12 @@ ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
   ; This can also be done (and better it do it?) via aia_bp_estimate_error.pro
 
   ; workout the error on the data
-  edn0 = fltarr(na,nb,nf)
+  edn0 = fltarr(na,nb,nwaves)
   gains = [18.3, 17.6, 17.7, 18.3, 18.3, 17.6] ; magic numbers - where from?
   dn2ph = gains*[94, 131, 171, 193, 211, 335]/3397. ; magic number 3397. - where from?
   rdnse = [1.14, 1.18, 1.15, 1.20, 1.20, 1.18] ; magic numbers - where from?
   ; error in DN/s/px
-  for i=0, nf-1 do begin
+  for i=0, nwaves-1 do begin
     shotnoise = sqrt(dn2ph[i]*abs(dn0[*,*,i])*durs[i])/dn2ph[i]
     edn0[*,*,i] = sqrt(rdnse[i]^2.+shotnoise^2.)/durs[i]
   endfor
@@ -157,9 +187,12 @@ ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   ; Just do a sub-part of the image for testing purposes
-  dn = dn0[261:360, 311:410, *]
-  edn = edn0[261:360, 311:410, *]
-  
+  ;dn = dn0[261:360, 311:410, *]
+  ;edn = edn0[261:360, 311:410, *]
+
+  dn = dn0
+  edn = edn0
+
   nxn = n_elements(dn[*, 0, 0])
   nyn = n_elements(dn[0, *, 0])
   dem_norm0 = dblarr(nxn, nyn, nt)
@@ -175,6 +208,7 @@ ff=[f094[0],f131[0],f171[0],f193[0],f211[0],f335[0]]
   dn2dem_pos_nb, dn, edn, TRmatrix, tr_logt, temps, dem, edem, elogt, chisq, dn_reg, /timed;,dem_norm0=dem_norm0
 
   ; Save the output
+  output_path = odir + sep + jet_date + prt + jet_number_string
   save, /variables, filename=output_path
   
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
