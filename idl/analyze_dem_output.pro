@@ -10,6 +10,14 @@ jet_number = 0
 sep = '/'
 prt = '_'
 
+;
+; ************
+;
+
+FUNCTION make_map_by_inheritance, old_map, new_data
+  RETURN make_map(new_data, dx=old_map.dx, dy=old_map.dy, xc=old_map.xc, yc=old_map.yc, time=old_map.time)
+END
+
   ; Example script to recover the DEM from AIA Lvl1.5 fits files
   ; The specific AIA fits used here are not include with the code
   ;
@@ -52,9 +60,30 @@ image_root =
 ; and record the corresponding temperature bin.  This is then used to
 ; create a map of the peak temperature.
 ;
-
-
+mean_temps = get_edges(temps, /mean)
+max_temp_image = dblarr(nx, ny)
+for i = 0, nx-1 do begin
+   for j = 0, ny-1 do begin
+      max_temp_index = max(dem[i, j, *])
+      max_temp_image[i, j] = mean_temps[max_temp_index]
+   endfor
+endfor
+; Make an SSWIDL map
+max_temp_map = make_map_by_inheritance(this_map, max_temp_image)
+plot_map, max_temp_map, /cbar
 ;
 ;  Calculate the mean temperature of the plasma.  This is found by the
 ;  weighted average of the DEM response as a function of temperature.
 ;
+mean_temp_image = dblarr(nx, ny)
+for i = 0, nx-1 do begin
+   for j = 0, ny-1 do begin
+      mean_temp_image[i, j] = mean(dem[i, j, *] * mean_temps[*])
+   endfor
+endfor
+; Make an SSWIDL map
+mean_temp_map = make_map_by_inheritance(this_map, mean_temp_image)
+plot_map, mean_temp_map, /cbar
+
+
+end
