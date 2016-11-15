@@ -14,7 +14,7 @@
 ; of the data that are available.  Zero indicates use the specified
 ; times in the requested_times array, any other integer means
 ; calculate at those number of times between the start and the end.
-equally_spaced_times = 0
+equally_spaced_times = 3
 if equally_spaced_times eq 0 then begin
    requested_times = ['2012-11-20 01:30:00']
 endif
@@ -24,6 +24,7 @@ data_source = '/home/ireland/Data/jets'
 output_root = '~/jets/sav'
 jet_date = '2012-11-20'
 jet_number = 0
+prep_level = '1.5'
 sep = '/'
 prt = '_'
 
@@ -48,7 +49,7 @@ prt = '_'
 jet_number_string = 'jet' + prt + strtrim(string(jet_number), 1)
 
 ; Where the input data is
-fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/cutouts/1.0'
+fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/cutouts/' + prep_level
 
 ; Where the output data will be stored
 odir = output_root + sep + jet_date + sep + jet_number_string
@@ -60,14 +61,21 @@ fname = jet_date + prt + jet_number_string + '.sav'
 output_filepath = odir + sep + fname
 
 ; AIA channels we will use
-waves = ['94', '131', '171', '193', '211', '335']
+if prep_level eq '1.5' then begin
+   waves = ['0094', '0131', '0171', '0193', '0211', '0335']
+   file_extension = '.fits'
+endif else begin
+   waves = ['94', '131', '171', '193', '211', '335']
+   file_extension = '_.fts'
+endelse
+
 
 ; Get the file names and the times
 ddd = dictionary()
 nwaves = n_elements(waves)
 for i = 0, nwaves-1 do begin
    wave = waves[i]
-   search_term = '*' + wave + '_.fts'
+   search_term = '*' + wave + file_extension
    print,'Searching ' + fdir + ' for ' + search_term
    f = file_search(fdir, search_term, count=count)
    if count eq 0 then begin
@@ -78,24 +86,31 @@ for i = 0, nwaves-1 do begin
    print,'Number of files = ', nf
    ddd("filename_" + wave) = f
    ddd("obstime_" + wave) = dblarr(nf)
+   stored_times = dblarr(nf)
    for j = 0, nf-1 do begin
       ss = strsplit(f[j], sep, /extract)
-      ssf =  strsplit(ss[-1], '_', /extract)
-      date_time = ssf[2] + '_' + ssf[3]
-      ddd("obstime_" + wave) = anytim2tai(date_time)
+      ssf = strsplit(ss[-1], '_', /extract)
+      if prep_level eq '1.0' then begin
+         date_time = ssf[2] + '_' + ssf[3]
+      endif
+      if prep_level eq '1.5' then begin
+         date_time = strmid(ssf[0], 3, 8) + '_' + ssf[1]
+      endif
+      stored_times[j] = anytim2tai(date_time)
       ; Initialize the time-search variables
       if (i eq 0) and (j eq 0) then begin
-         earliest_time = ddd("obstime_" + wave)
-         latest = ddd("obstime_" + wave)
+         earliest_time = stored_times[j]
+         latest_time = stored_times[j]
       endif
       ; Get the earliest and latest observation times
-      if ddd("obstime_" + wave) lt earliest_time then begin
-         earliest_time = ddd("obstime_" + wave)
+      if stored_times[j] lt earliest_time then begin
+         earliest_time = stored_times[j]
       endif
-      if ddd("obstime_" + wave) gt latest_time then begin
-         latest_time = ddd("obstime_" + wave)
+      if stored_times[j] gt latest_time then begin
+         latest_time = stored_times[j]
       endif
    endfor
+   ddd("obstime_" + wave) = stored_times
 endfor
 
 ;
@@ -105,7 +120,7 @@ if equally_spaced_times ne 0 then begin
    requested_times = dblarr(equally_spaced_times)
    for  i = 0, equally_spaced_times-1 do begin
       time_step = (latest_time - earliest_time)/(1.0*(equally_spaced_times-1))
-      requested_times[i] = earliest_time + i*time_ste
+      requested_times[i] = earliest_time + i*time_step
    endfor
 endif
 
@@ -120,16 +135,20 @@ for k = 0, n_requested_times-1  do begin
 ; Get the time we are interested in
    this_time = anytim2tai(requested_time)
 
+; Get an easier to understand version of this time
+   this_time_utc = anytim2utc(this_time, /ccsds)
+   print,'Time step ' + string(k+1) + ' out of ' + string(n_requested_times)
+   print,'Calculating temperature close to ' + this_time_utc
+
 ; Get the nearest files to the requested times
    wave_filenames = strarr(nwaves)
    for j = 0, nwaves-1 do begin
       wave = waves[j]
       index = "obstime_" + wave
-      time_diff = abs(ddd(index) - this_time)
+      time_diff = abs(ddd[index] - this_time)
       min_time_diff_index = (where(time_diff eq min(time_diff)))[0]
       wave_filenames[j] = (ddd("filename_" + wave))[min_time_diff_index]
    endfor
-
    
 ;f094=file_search(fdir, '*94_.fts')
 ;f131=file_search(fdir, '*131_.fts')
@@ -154,10 +173,11 @@ for k = 0, n_requested_times-1  do begin
                                 ;     map2fits,rmap,fdir+'test_aia15_1024_'+waves[i]+'A.fts'
                                 ;  endfor
 
-                                ; Get the size of each image.  Need to check image size
-                                ; since the images can be very slightly different
+; Get the size of each image.  Need to check image size
+; since the images can be very slightly different
    dim = fltarr(nwaves, 2)
    for i=0, nwaves-1 do begin
+      print,'Using file ' + wave_filenames[i]
       fits2map, wave_filenames[i], this_map
       dim[i, *] = size(this_map.data, /dim)
    endfor
@@ -250,9 +270,10 @@ for k = 0, n_requested_times-1  do begin
    dn2dem_pos_nb, dn, edn, TRmatrix, tr_logt, temps, dem, edem, elogt, chisq, dn_reg, /timed ;,dem_norm0=dem_norm0
 
                                 ; Save the output
-   requested_time_string = strjoin(strsplit(requested_time, ':', /extract), prt)
-   requested_time_string = strjoin(strsplit(requested_time_string, ' ', /extract), prt)
-   output_path = odir + sep + jet_date + prt + jet_number_string + prt + requested_time_string
+   requested_time_string = strjoin(strsplit(this_time_utc, ':', /extract), prt)
+   requested_time_string = strjoin(strsplit(requested_time_string, '-', /extract), prt)
+   output_path = odir + sep + jet_date + prt + jet_number_string + prt + requested_time_string + prt + prep_level + '.sav'
+   print,'Saved to ' + output_path
    save, /variables, filename=output_path
 
 endfor
