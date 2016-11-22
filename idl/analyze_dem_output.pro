@@ -16,6 +16,11 @@ prep_level = '1.5'
 sep = '/'
 prt = '_'
 
+; PNG output properties
+png_xsize = 1000
+png_charsize = 4
+png_scale = 4.0/3.0
+
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 jet_number_string = 'jet' + prt + strtrim(string(jet_number), 1)
 
@@ -24,12 +29,8 @@ fdir = data_source + sep + jet_date + sep + jet_number_string
 
 ; Input file names
 fnames = file_search(fdir, '*.sav')
-
-; Where the output images will be stored
-odir = output_root + sep + jet_date + sep + jet_number_string
-
-; Output filename
-oname = jet_date + prt + jet_number_string + prt + prep_level + prt + '.sav'
+;fnames = ['/home/ireland/jets/sav/2012-11-20/jet_0/2012-11-20_jet_0_2012_11_20T01_32_36.895_1.5.sav']
+;fnames = ['/home/ireland/jets/sav/2012-11-20/jet_0/2012-11-20_jet_0_2012_11_20T01_36_49.526_1.5.sav']
 
 ; AIA channels we will use
 if prep_level eq '1.5' then begin
@@ -44,10 +45,10 @@ endelse
 for k = 0, n_elements(fnames)-1 do begin
 ; Next filename
    input_fullpath = fnames[k]
-
+   print, ' '
+   print,'Restoring ' + input_fullpath
 ; Restore the data
    restore, input_fullpath
-
 ;
 ; The main DEM output is in the form (nx, ny, nt) where the third
 ; dimension is temperature.  At each position we find the maximum DEM
@@ -72,7 +73,19 @@ for k = 0, n_elements(fnames)-1 do begin
 ; Make an SSWIDL map
    loadct,39
    max_temp_map = make_map_by_inheritance(this_map, max_temp_image)
-   plot_map, max_temp_map, /cbar, /limb_plot, grid_spacing=10
+   ; Where the output images will be stored
+   odir = '~/jets/img' + sep + jet_date + sep + jet_number_string
+   ; Output filename
+   oname = jet_date + prt + jet_number_string + prt + prep_level
+   png_filepath = odir + sep + oname + prt + string(k, format='(I03)') + '.png'
+   print, 'Image file at ' + png_filepath
+   plot_map, max_temp_map, /cbar, /limb_plot, grid_spacing=10, ysize=png_xsize, xsize= png_xsize*png_scale
+   write_png, png_filepath, tvrd(/true)
+   ; Output FITS filename to be loaded in to {ython
+   odir = '~/jets/sav' + sep + jet_date + sep + jet_number_string
+   fits_filepath = odir + sep + oname + prt + string(k, format='(I03)') + '.fits'
+   print, 'FITS file saved to ' + fits_filepath
+   map2fits, max_temp_map, fits_filepath
 endfor
 stop
 ;

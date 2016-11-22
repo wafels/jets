@@ -14,7 +14,7 @@
 ; of the data that are available.  Zero indicates use the specified
 ; times in the requested_times array, any other integer means
 ; calculate at those number of times between the start and the end.
-equally_spaced_times = 3
+equally_spaced_times = 20
 if equally_spaced_times eq 0 then begin
    requested_times = ['2012-11-20 01:30:00']
 endif
@@ -23,7 +23,7 @@ endif
 data_source = '/home/ireland/Data/jets'
 output_root = '~/jets/sav'
 jet_date = '2012-11-20'
-jet_number = 0
+jet_number = 1
 prep_level = '1.5'
 sep = '/'
 prt = '_'
