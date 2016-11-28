@@ -11,7 +11,7 @@ END
 data_source = '~/jets/sav'
 output_root = '~/jets/img'
 jet_date = '2012-11-20'
-jet_number = 0
+jet_number = 1
 prep_level = '1.5'
 sep = '/'
 prt = '_'
@@ -70,20 +70,28 @@ for k = 0, n_elements(fnames)-1 do begin
          endelse
       endfor
    endfor
-; Make an SSWIDL map
+
+   ; Make an SSWIDL map
    loadct,39
    max_temp_map = make_map_by_inheritance(this_map, max_temp_image)
+
    ; Where the output images will be stored
    odir = '~/jets/img' + sep + jet_date + sep + jet_number_string
+
    ; Output filename
    oname = jet_date + prt + jet_number_string + prt + prep_level
    png_filepath = odir + sep + oname + prt + string(k, format='(I03)') + '.png'
    print, 'Image file at ' + png_filepath
    plot_map, max_temp_map, /cbar, /limb_plot, grid_spacing=10, ysize=png_xsize, xsize= png_xsize*png_scale
    write_png, png_filepath, tvrd(/true)
-   ; Output FITS filename to be loaded in to {ython
+
+   ; Output FITS filename to be loaded in to python
    odir = '~/jets/sav' + sep + jet_date + sep + jet_number_string
    fits_filepath = odir + sep + oname + prt + string(k, format='(I03)') + '.fits'
+
+   ; Add/edit some keywords to the FITS file to make it understandable to SunPy
+   max_temp_map.id = 'TEMPERATURE'
+   add_prop, max_temp_map, demmethod='HK2012'
    print, 'FITS file saved to ' + fits_filepath
    map2fits, max_temp_map, fits_filepath
 endfor
