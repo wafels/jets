@@ -46,7 +46,7 @@ def movie_normalization(mc, percentile_interval=99.0, stretch=None):
     return mc
 
 
-directory = '/home/ireland/jets/sav/2012-11-20/jet_0'
+directory = '/home/ireland/jets/sav/2012-11-20/jet_1'
 extension = '.fits'
 
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))
@@ -54,7 +54,7 @@ mc = Map(file_list, cube=True)
 
 mc = movie_normalization(mc, percentile_interval=100.0)
 for i in range(0, len(mc)):
-    mc[i].plot_settings['cmap'] = cm.viridis
+    mc[i].plot_settings['cmap'] = cm.jet
 
 def myplot(fig, ax, sunpy_map):   
     p = sunpy_map.draw_limb()
@@ -64,10 +64,9 @@ def myplot(fig, ax, sunpy_map):
 
 ani = mc.plot(plot_function=myplot)
 plt.colorbar()
-ggg
 Writer = animation.writers['avconv']
 writer = Writer(fps=20, metadata=dict(artist='SunPy'), bitrate=18000)
-fname = os.path.join('bbb.mp4')
+fname = os.path.join('ccc.mp4')
 ani.save(fname, writer=writer)
 
 

@@ -90,8 +90,8 @@ for k = 0, n_elements(fnames)-1 do begin
    fits_filepath = odir + sep + oname + prt + string(k, format='(I03)') + '.fits'
 
    ; Add/edit some keywords to the FITS file to make it understandable to SunPy
-   max_temp_map.id = 'TEMPERATURE'
    add_prop, max_temp_map, demmethod='HK2012'
+   add_prop, max_temp_map, maptype='TEMPERATURE'
    print, 'FITS file saved to ' + fits_filepath
    map2fits, max_temp_map, fits_filepath
 endfor
