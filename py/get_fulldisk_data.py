@@ -39,7 +39,7 @@ jet_observation_times = [('2012-11-20 01:28', '2012-11-20 01:30'),
 jet_observation_times = [('2012-11-20 01:28', '2012-11-20 01:30')]
 
 # Half length of the window around the main observation times
-jet_times_window_half_length = 20*60.0*u.s
+jet_times_window_half_length = 20*u.minute
 
 # Create the jet observation times
 jet_times = []
@@ -83,11 +83,11 @@ if not data_already_downloaded:
             jet_observables.append(z)
             print(instrument, measurement)
             print('Number of files = %i' % len(z))
-        # Get the data for this observable
+        # Get the data for each observable
         for i, observable in enumerate(jet_observables):
             print('Observable number {:n} out of {:n}.'.format(i, len(jet_observables)))
             path = save_location + "jet_%j/{source}/{instrument}/fulldisk/{file}" %i
-            print('Saving {:s}'.format(path))
+            print('Saving to {:s}'.format(path))
             downloaded = client.get(observable, path=path)
 
 
