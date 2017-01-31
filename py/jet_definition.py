@@ -1,4 +1,6 @@
 import os
+import shutil
+import glob
 import astropy.units as u
 from sunpy.net import vso
 
@@ -9,9 +11,30 @@ data_already_downloaded = False
 save_root = os.path.expanduser('~/Data/jets/2012-11-20/')
 
 
-def save_location(jet_name, observable, level="1.0", save_root=save_root, file_type='fulldisk'):
-    obs_name = str(observable)
-    location = "%s/{source}/{instrument}/%s/%s/%s/{file}" % (jet_name, level, obs_name, file_type)
+def file_by_channel(directory, search='_{:s}a_', channels=['94', '131', '171', '193', '211', '335']):
+    """
+    Looks for files that match a set of criteria and moves them in to subdirectories
+    based on those criteria
+
+    :param directory:
+    :param search:
+    :param channels:
+    :return:
+    """
+    root = os.path.expanduser(directory)
+    for channel in channels:
+        s = search.format(channel)
+        channel_path = os.path.join(root, s)
+        if not(os.path.isdir(channel_path)):
+            os.makedirs(channel_path)
+        file_list = glob.glob(os.path.join(root, '*'+s+'*'))
+        for f in file_list:
+            fname = os.path.split(f)[-1]
+            shutil.move(f, os.path.join(channel_path, fname))
+
+
+def save_location(jet_name, level="1.0", save_root=save_root, file_type='fulldisk'):
+    location = "%s/{source}/{instrument}/%s/%s/{file}" % (jet_name, level, file_type)
     return os.path.join(save_root, location)
 
 
@@ -41,6 +64,11 @@ jet1 = Cutout('2012-11-20 01:10', '2012-11-20 01:50', [790, -313] * u.arcsec,
 jet2 = Cutout('2012-11-20 02:10', '2012-11-20 02:50', [790, -313] * u.arcsec,
               name='jet_region_A_2')
 
+jet2 = Cutout('2012-11-20 02:10', '2012-11-20 02:50', [790, -313] * u.arcsec,
+              name='jet_region_A_2',
+              observables=([vso.attrs.Instrument('aia'), vso.attrs.Wave(335*u.AA, 335*u.AA)],
+                           [vso.attrs.Instrument('hmi'), vso.attrs.Physobs('LOS_magnetic_field')]))
+
 jet3 = Cutout('2012-11-20 02:30', '2012-11-20 03:10', [790, -313] * u.arcsec,
               name='jet_region_A_3')
 
@@ -60,4 +88,5 @@ jet7 = Cutout('2012-11-20 07:49', '2012-11-20 08:29', [767, -199] * u.arcsec,
 
 # List of jets
 jets = [jet1, jet2, jet3, jet4, jet5, jet6, jet7]
+jets = [jet3, jet4, jet5, jet6, jet7]
 

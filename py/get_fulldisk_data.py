@@ -33,9 +33,9 @@ for j, jet in enumerate(jets):
     # Get the data for each observable
     for i, observable in enumerate(these_data):
         print('Observable number {:n} out of {:n}.'.format(i+1, len(these_data)))
-        path = save_location(jet.name, observable, level=1.0)
+        path = save_location(jet.name, level=1.0)
         print('Saving to {:s}'.format(path))
-        downloaded = client.get(observable, path=path)
+        downloaded = client.get(observable, path=path, site='SDAC').wait()
 
 
 

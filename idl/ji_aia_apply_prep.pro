@@ -2,15 +2,15 @@
 ; Takes level 1.0 AIA cutout service data in one directory, preps it up
 ; to 1.5, and dumps it in another
 ;
-PRO JI_AIA_APPLY_PREP, location, wave
+PRO JI_AIA_APPLY_PREP, in_files, out_files, wave
 
-  indir = location + '/' + '1.0/' + wave + '/'
+  indir = in_files + '/' + wave + '/'
 
-  outdir = location + '/' + '1.5/' + wave + '/'
+  outdir = out_files + '/' + wave + '/'
 
   file_mkdir, outdir
 
-  wavetype = 'aia.lev1.' + wave + '*'
+  wavetype = 'aia_lev1_' + wave + '*'
 
 ; Read in the data
   print,'Reading in data from ', indir
