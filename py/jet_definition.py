@@ -3,6 +3,7 @@ import shutil
 import glob
 import astropy.units as u
 from sunpy.net import vso
+from sunpy.time import parse_time
 
 # Have the necessary data already been downloaded?
 data_already_downloaded = False
@@ -58,27 +59,27 @@ class Cutout:
         self.height = height
         self.observables = observables
 
+jet1_time = parse_time('2012-11-20 01:30')
 jet1 = Cutout('2012-11-20 01:10', '2012-11-20 01:50', [790, -313] * u.arcsec,
               name='jet_region_A_1')
 
+jet2_time = parse_time('2012-11-20 02:35')
 jet2 = Cutout('2012-11-20 02:10', '2012-11-20 02:50', [790, -313] * u.arcsec,
               name='jet_region_A_2')
 
-jet2 = Cutout('2012-11-20 02:10', '2012-11-20 02:50', [790, -313] * u.arcsec,
-              name='jet_region_A_2',
-              observables=([vso.attrs.Instrument('aia'), vso.attrs.Wave(335*u.AA, 335*u.AA)],
-                           [vso.attrs.Instrument('hmi'), vso.attrs.Physobs('LOS_magnetic_field')]))
-
+jet3_time = parse_time('2012-11-20 02:55')
 jet3 = Cutout('2012-11-20 02:30', '2012-11-20 03:10', [790, -313] * u.arcsec,
               name='jet_region_A_3')
 
+jet4_time = parse_time('2012-11-20 03:10')
 jet4 = Cutout('2012-11-20 02:50', '2012-11-20 03:30', [790, -313] * u.arcsec,
               name='jet_region_A_4')
 
-
+jet5_time = parse_time('2012-11-20 04:00')
 jet5 = Cutout('2012-11-20 03:40', '2012-11-20 04:20', [767, -199] * u.arcsec,
               name='jet_region_B_1')
 
+jet6_time = parse_time('2012-11-20 06:00')
 jet6 = Cutout('2012-11-20 05:40', '2012-11-20 06:20', [767, -199] * u.arcsec,
               name='jet_region_B_2')
 
@@ -88,5 +89,5 @@ jet7 = Cutout('2012-11-20 07:49', '2012-11-20 08:29', [767, -199] * u.arcsec,
 
 # List of jets
 jets = [jet1, jet2, jet3, jet4, jet5, jet6, jet7]
-jets = [jet3, jet4, jet5, jet6, jet7]
+#jets = [jet3, jet4, jet5, jet6, jet7]
 

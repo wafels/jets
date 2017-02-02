@@ -9,6 +9,9 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import numpy as np
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
 
 # Normalize all the maps
 def movie_normalization(mc, percentile_interval=99.0, stretch=None):
@@ -52,11 +55,29 @@ extension = '.fits'
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))
 mc = Map(file_list, cube=True)
 
+hk_cmap = ListedColormap(['k', 'b', 'g', 'y', 'r', 'w'])
+temps = np.asarray([0.5, 1.0, 2.0, 4.0, 6.0, 9.0, 14.0])*1e6
+norm = BoundaryNorm(temps, hk_cmap.N)
+
 mc = movie_normalization(mc, percentile_interval=100.0)
 for i in range(0, len(mc)):
-    mc[i].plot_settings['cmap'] = cm.jet
+    plt.close('all')
+    fig = plt.figure()
+    ax = plt.subplot()
+    mc[i].plot_settings['cmap'] = hk_cmap
+    im = mc[i].plot()
+    mc[i].draw_grid()
+    mc[i].draw_limb()
+    cbar = fig.colorbar(im, cmap=hk_cmap, ticks=temps, norm=norm, orientation='vertical')
+    #cbar.ax.set_yticklabels(['0.5', '1.0', '2.0', '4.0', '6.0', '9.0', '14.0'])
+    cbar.ax.set_ylabel('MK')
+    #plt.colorbar(label='temperature (MK)')
+    plt.title('temperature\n{:s}'.format(mc[i].date.strftime("%Y/%m/%d %H:%M:%S")))
+    plt.savefig('jet_dem_temp_{:n}.png'.format(i))
+    aaa
 
-def myplot(fig, ax, sunpy_map):   
+
+def myplot(fig, ax, sunpy_map):
     p = sunpy_map.draw_limb()
     p = sunpy_map.draw_grid()
     #fig.colorbar(sunpy_map.plot())

@@ -8,14 +8,16 @@ from jet_definition import jets
 
 
 # Get the first file in each subdirectory
-for j, jet in jets:
+for jet in jets:
     # Get the observables for this jet
-    observables = jet.observables
+    observables = ['94', '131', '171', '193', '211', '335']
 
     # Go through each observable
     for observable in observables:
-        full_disk_file_location = save_location(jet.name, observable, level="1.5")
-        file_names = glob.glob('{:s}/*.fits'.format(full_disk_file_location))
+        full_disk_file_location = '/home/ireland/Data/jets/2012-11-20/{:s}/SDO/AIA/1.0/fulldisk/{:s}'.format(jet.name, observable)
+        search = '{:s}/*.fits'.format(full_disk_file_location)
+        print(search)
+        file_names = glob.glob(search)
 
         # For AIA, fix the pixel scale size across all channels.  Therefore if
         # each of cutout specifications specify the same extent in arcsecs,
@@ -30,11 +32,11 @@ for j, jet in jets:
             position = jet.position
             position_in_pixels = m.data_to_pixel(position[0], position[1])
 
-            x1 = position_in_pixels[0] - jet.width // 2
+            x1 = np.rint(position_in_pixels[0]) - np.rint(jet.width.value // 2) * u.pix
             x2 = x1 + np.rint(jet.width/arcsec_to_pixel)
             x_range = (x1.value, x2.value) * u.pix
 
-            y1 = position_in_pixels[1] - jet.height // 2
+            y1 = np.rint(position_in_pixels[1]) - np.rint(jet.height.value // 2) * u.pix
             y2 = y1 + np.rint(jet.height/arcsec_to_pixel)
             y_range = (y1.value, y2.value) * u.pix
 
@@ -42,13 +44,16 @@ for j, jet in jets:
             sm = m.submap(x_range, y_range)
 
             # filename
-            cutout_filename = os.path.splitext(os.path.split(f)[1])[0]
+            cutout_filename = os.path.splitext(os.path.split(f)[1])[0] + '_cutout.fits'
 
             # directory
-            cutout_directory = save_location(jet.name, observable, level="1.5", file_type="cutout")
+            cutout_directory = '/home/ireland/Data/jets/2012-11-20/{:s}/SDO/AIA/1.0/cutout/{:s}'.format(jet.name, observable)
+            if not os.path.isdir(cutout_directory):
+                os.makedirs(cutout_directory)
 
             # filepath
             cutout_filepath = os.path.join(cutout_directory, cutout_filename)
 
             # Save cutouts as FITS files
-            sm.save(cutout_filepath, filetype='.fits')
+            if not os.path.isfile(cutout_filepath):
+                sm.save(cutout_filepath)
