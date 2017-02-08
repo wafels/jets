@@ -10,7 +10,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
-from matplotlib.colors import ListedColormap, BoundaryNorm
+import matplotlib as mpl
 
 
 # Normalize all the maps
@@ -55,26 +55,38 @@ extension = '.fits'
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))
 mc = Map(file_list, cube=True)
 
-hk_cmap = ListedColormap(['k', 'b', 'g', 'y', 'r', 'w'])
-temps = np.asarray([0.5, 1.0, 2.0, 4.0, 6.0, 9.0, 14.0])*1e6
-norm = BoundaryNorm(temps, hk_cmap.N)
+# Temperature bins used in the reconstruction
+temps = [0.5*1e6, 1.0*1e6, 2.0*1e6, 4.0*1e6, 6.0*1e6, 9.0*1e6, 14.0*1e6]
+# Boundaries
+boundaries = [0] + temps + [18.0 * 1e6]
+cmap3 = mpl.colors.ListedColormap(['k', 'b', 'g', 'y', 'r', 'w'])
+cmap3.set_over('0.75')
+cmap3.set_under('0.35')
+norm3 = mpl.colors.BoundaryNorm(temps, cmap3.N)
+#cb3 = mpl.colorbar.ColorbarBase(axl3, cmap=cmap3, norm=norm3,
+#                                ticks=temps,  # optional
+#                                spacing='proportional')
+#cb3.set_label('MK')
 
 mc = movie_normalization(mc, percentile_interval=100.0)
 for i in range(0, len(mc)):
     plt.close('all')
-    fig = plt.figure()
-    ax = plt.subplot()
-    mc[i].plot_settings['cmap'] = hk_cmap
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    mc[i].plot_settings['cmap'] = cmap3
+    mc[i].plot_settings['norm'] = norm3
     im = mc[i].plot()
     mc[i].draw_grid()
     mc[i].draw_limb()
-    cbar = fig.colorbar(im, cmap=hk_cmap, ticks=temps, norm=norm, orientation='vertical')
-    #cbar.ax.set_yticklabels(['0.5', '1.0', '2.0', '4.0', '6.0', '9.0', '14.0'])
+    cbar = fig.colorbar(im, cmap=cmap3, ticks=temps, norm=norm3,
+                        orientation='vertical', spacing='proportional',
+                        extend='both', boundaries=boundaries)
+    cbar.ax.set_yticklabels(['0.5', '1.0', '2.0', '4.0', '6.0', '9.0', '14.0'])
     cbar.ax.set_ylabel('MK')
     #plt.colorbar(label='temperature (MK)')
     plt.title('temperature\n{:s}'.format(mc[i].date.strftime("%Y/%m/%d %H:%M:%S")))
     plt.savefig('jet_dem_temp_{:n}.png'.format(i))
-    aaa
+
+
 
 
 def myplot(fig, ax, sunpy_map):
@@ -84,7 +96,6 @@ def myplot(fig, ax, sunpy_map):
     return p
 
 ani = mc.plot(plot_function=myplot)
-plt.colorbar()
 Writer = animation.writers['avconv']
 writer = Writer(fps=20, metadata=dict(artist='SunPy'), bitrate=18000)
 fname = os.path.join('ccc.mp4')
