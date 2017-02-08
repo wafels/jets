@@ -83,12 +83,12 @@ for i in range(0, len(mc)):
     cbar.ax.set_yticklabels(['0.5', '1.0', '2.0', '4.0', '6.0', '9.0', '14.0'])
     cbar.ax.set_ylabel('MK')
     #plt.colorbar(label='temperature (MK)')
-    plt.title('temperature\n{:s}'.format(mc[i].date.strftime("%Y/%m/%d %H:%M:%S")))
+    plt.title('maximum temperature\n{:s}'.format(mc[i].date.strftime("%Y/%m/%d %H:%M:%S")))
     plt.savefig('jet_dem_temp_{:n}.png'.format(i))
 
 
 
-
+aaa
 def myplot(fig, ax, sunpy_map):
     p = sunpy_map.draw_limb()
     p = sunpy_map.draw_grid()
