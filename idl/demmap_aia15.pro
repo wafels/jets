@@ -24,9 +24,10 @@ data_source = '/home/ireland/Data/jets'
 output_root = '~/jets/sav'
 jet_date = '2012-11-20'
 jet_number = 1
-prep_level = '1.5'
+prep_level = '1.0'
 sep = '/'
 prt = '_'
+from_lmsal_cutout = 0
 
   ; Example script to recover the DEM from AIA Lvl1.5 fits files
   ; The specific AIA fits used here are not include with the code
@@ -46,13 +47,13 @@ prt = '_'
   ; Also note the int to float for the AIA data is done during the rebinning
   ; If not rebinning still need to do this.
   ; Assumes you have a directory with some AIA v1.5 fits in it of all six coronal channels
-jet_number_string = 'jet' + prt + strtrim(string(jet_number), 1)
+jet_number_string = 'jet_region_B'
 
 ; Where the input data is
-fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/cutouts/' + prep_level
+fdir = data_source + sep + jet_date + sep + jet_number_string + '/AIA/' + prep_level + sep + 'cutout' + sep
 
 ; Where the output data will be stored
-odir = output_root + sep + jet_date + sep + jet_number_string
+odir = output_root + sep + jet_date + sep + jet_number_string + '/dem'
 
 ; Output filename
 fname = jet_date + prt + jet_number_string + '.sav'
@@ -65,8 +66,13 @@ if prep_level eq '1.5' then begin
    waves = ['0094', '0131', '0171', '0193', '0211', '0335']
    file_extension = '.fits'
 endif else begin
-   waves = ['94', '131', '171', '193', '211', '335']
-   file_extension = '_.fts'
+   if from_lmsal_cutout then begin
+     waves = ['94', '131', '171', '193', '211', '335']
+     file_extension = '_.fts'
+   endif else begin
+     waves = ['94A', '131A', '171A', '193A', '211A', '335A']
+     file_extension = '*.fits'
+   endelse
 endelse
 
 
@@ -178,8 +184,10 @@ for k = 0, n_requested_times-1  do begin
    dim = fltarr(nwaves, 2)
    for i=0, nwaves-1 do begin
       print,'Using file ' + wave_filenames[i]
-      fits2map, wave_filenames[i], this_map
-      dim[i, *] = size(this_map.data, /dim)
+      ;fits2map, wave_filenames[i], this_map
+      ;data = this_map.data
+      data = readfits(wave_filename)
+      dim[i, *] = size(data, /dim)
    endfor
    new_nx = min(dim(*,0))
    new_ny = min(dim(*,1))

@@ -43,12 +43,12 @@ class Cutout:
     def __init__(self, start_time, end_time, position, name=None,
                  time_window_half_length=20*u.minute,
                  width=100*u.arcsec, height=100*u.arcsec,
-                 observables=([vso.attrs.Instrument('aia'), vso.attrs.Wave(94*u.AA, 94*u.AA)],
-                              [vso.attrs.Instrument('aia'), vso.attrs.Wave(131*u.AA, 131*u.AA)],
-                              [vso.attrs.Instrument('aia'), vso.attrs.Wave(171*u.AA, 171*u.AA)],
-                              [vso.attrs.Instrument('aia'), vso.attrs.Wave(193*u.AA, 193*u.AA)],
-                              [vso.attrs.Instrument('aia'), vso.attrs.Wave(211*u.AA, 211*u.AA)],
-                              [vso.attrs.Instrument('aia'), vso.attrs.Wave(335*u.AA, 335*u.AA)],
+                 observables=([vso.attrs.Instrument('aia'), vso.attrs.Wavelength(94*u.AA, 94*u.AA)],
+                              [vso.attrs.Instrument('aia'), vso.attrs.Wavelength(131*u.AA, 131*u.AA)],
+                              [vso.attrs.Instrument('aia'), vso.attrs.Wavelength(171*u.AA, 171*u.AA)],
+                              [vso.attrs.Instrument('aia'), vso.attrs.Wavelength(193*u.AA, 193*u.AA)],
+                              [vso.attrs.Instrument('aia'), vso.attrs.Wavelength(211*u.AA, 211*u.AA)],
+                              [vso.attrs.Instrument('aia'), vso.attrs.Wavelength(335*u.AA, 335*u.AA)],
                               [vso.attrs.Instrument('hmi'), vso.attrs.Physobs('LOS_magnetic_field')])):
         self.start_time = start_time
         self.end_time = end_time
@@ -76,7 +76,7 @@ jet4 = Cutout('2012-11-20 02:50', '2012-11-20 03:30', [790, -313] * u.arcsec,
               name='jet_region_A_4')
 
 jet5_time = parse_time('2012-11-20 04:00')
-jet5 = Cutout('2012-11-20 03:40', '2012-11-20 04:20', [767, -199] * u.arcsec,
+jet5 = Cutout('2012-11-20 04:10', '2012-11-20 04:30', [626, -471] * u.arcsec,
               name='jet_region_B_1')
 
 jet6_time = parse_time('2012-11-20 06:00')
