@@ -6,10 +6,12 @@ import sunpy.map
 from jet_definition import jet5 as jet
 
 observables = ['94', '131', '171', '193', '211', '335']
+observables = ['94']
+observables = ['131', '171', '193', '211', '335']
 
 # Go through each observable
 for observable in observables:
-    full_disk_file_location = '/home/ireland/Data/jets/2012-11-20/jet_region_B/AIA/1.0/fulldisk/{:s}'.format(observable)
+    full_disk_file_location = '/home/ireland/Data/jets/2012-11-20/jet_region_B/AIA/1.5/fulldisk/{:s}'.format(observable)
     search = '{:s}/*.fits'.format(full_disk_file_location)
     print(search)
     file_names = glob.glob(search)
@@ -42,13 +44,12 @@ for observable in observables:
         cutout_filename = os.path.splitext(os.path.split(f)[1])[0] + '_cutout.fits'
 
         # directory
-        cutout_directory = '/home/ireland/Data/jets/2012-11-20/jet_region_B/AIA/1.0/cutout/{:s}'.format(observable)
+        cutout_directory = '/home/ireland/Data/jets/2012-11-20/jet_region_B/AIA/1.5/cutout/{:s}'.format(observable)
         if not os.path.isdir(cutout_directory):
             os.makedirs(cutout_directory)
 
         # filepath
         cutout_filepath = os.path.join(cutout_directory, cutout_filename)
-        stop
 
         # Save cutouts as FITS files
         if not os.path.isfile(cutout_filepath):
