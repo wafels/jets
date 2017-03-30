@@ -5,15 +5,13 @@ import astropy.units as u
 import sunpy.map
 from jet_definition import jet5 as jet
 
+# observables = ['94', '131', '171', '193', '211', '335']
 observables = ['94', '131', '171', '193', '211', '335']
-observables = ['94']
-observables = ['131', '171', '193', '211', '335']
 
 # Go through each observable
 for observable in observables:
     full_disk_file_location = '/home/ireland/Data/jets/2012-11-20/jet_region_B/AIA/1.5/fulldisk/{:s}'.format(observable)
     search = '{:s}/*.fits'.format(full_disk_file_location)
-    print(search)
     file_names = glob.glob(search)
 
     # For AIA, fix the pixel scale size across all channels.  Therefore if

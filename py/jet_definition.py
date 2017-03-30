@@ -75,8 +75,8 @@ jet4_time = parse_time('2012-11-20 03:10')
 jet4 = Cutout('2012-11-20 02:50', '2012-11-20 03:30', [790, -313] * u.arcsec,
               name='jet_region_A_4')
 
-jet5_time = parse_time('2012-11-20 04:00')
-jet5 = Cutout('2012-11-20 04:10', '2012-11-20 04:30', [626, -471] * u.arcsec,
+jet5_time = parse_time('2012-11-20 04:20')
+jet5 = Cutout('2012-11-20 04:10', '2012-11-20 04:30', [743, -210] * u.arcsec,
               name='jet_region_B_1')
 
 jet6_time = parse_time('2012-11-20 06:00')

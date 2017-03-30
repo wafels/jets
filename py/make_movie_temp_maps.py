@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 import matplotlib as mpl
 
 
-output_directory = os.path.expanduser('~/jets/img/2012-11-20/jet_region_B_3')
+output_directory = os.path.expanduser('~/jets/img/2012-11-20/jet_region_B')
 date_format = "%Y/%m/%d %H:%M:%S"
 
 
@@ -52,6 +52,7 @@ def movie_normalization(mc, percentile_interval=99.0, stretch=None):
 
 
 directory = '/home/ireland/jets/sav/2012-11-20/jet_1'
+directory = '/home/ireland/jets/sav/2012-11-20/jet_region_B'
 extension = '.fits'
 
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))
