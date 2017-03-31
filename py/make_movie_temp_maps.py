@@ -6,6 +6,7 @@ import glob
 from sunpy.map import Map
 from astropy.visualization import LinearStretch, PercentileInterval
 from astropy.visualization.mpl_normalize import ImageNormalize
+import astropy.units as u
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib as mpl
@@ -74,7 +75,7 @@ for i in range(0, len(mc)):
     mc[i].plot_settings['cmap'] = cmap3
     mc[i].plot_settings['norm'] = norm3
     im = mc[i].plot()
-    mc[i].draw_grid()
+    mc[i].draw_grid(grid_spacing=5*u.deg)
     mc[i].draw_limb()
     cbar = fig.colorbar(im, cmap=cmap3, ticks=temps, norm=norm3,
                         orientation='vertical', spacing='proportional',
@@ -89,7 +90,7 @@ for i in range(0, len(mc)):
 
 def myplot(fig, ax, sunpy_map):
     p = sunpy_map.draw_limb()
-    p = sunpy_map.draw_grid()
+    p = sunpy_map.draw_grid(grid_spacing=5*u.deg)
     ax.set_title('maximum temperature\n{:s}'.format(sunpy_map.date.strftime(date_format)))
     #fig.colorbar(sunpy_map.plot())
     return p
