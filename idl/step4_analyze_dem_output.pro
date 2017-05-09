@@ -26,6 +26,10 @@ png_scale = 4.0/3.0
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 jet_number_string = 'jet_region_B'
+jet_number_string = 'jet_region_A_1'
+jet_number_string = 'jet_region_A_2'
+jet_number_string = 'jet_region_A_3'
+jet_number_string = 'jet_region_A_4'
 
 ; Where the input data is
 fdir = data_source + sep + jet_date + sep + jet_number_string

@@ -60,7 +60,7 @@ class Cutout:
         self.observables = observables
 
 jet1_time = parse_time('2012-11-20 01:30')
-jet1 = Cutout('2012-11-20 01:10', '2012-11-20 01:50', [790, -313] * u.arcsec,
+jet1 = Cutout('2012-11-20 01:20', '2012-11-20 01:40', [790, -313] * u.arcsec,
               name='jet_region_A_1')
 
 jet2_time = parse_time('2012-11-20 02:35')

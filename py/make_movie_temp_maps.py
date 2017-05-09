@@ -11,8 +11,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib as mpl
 
+jet_number_string = 'jet_region_B'
+jet_number_string = 'jet_region_A_1'
+jet_number_string = 'jet_region_A_2'
+jet_number_string = 'jet_region_A_3'
+jet_number_string = 'jet_region_A_4'
 
-output_directory = os.path.expanduser('~/jets/img/2012-11-20/jet_region_B')
+output_directory = os.path.expanduser('~/jets/img/2012-11-20/{:s}'.format(jet_number_string))
 date_format = "%Y/%m/%d %H:%M:%S"
 
 
@@ -52,8 +57,9 @@ def movie_normalization(mc, percentile_interval=99.0, stretch=None):
     return mc
 
 
-directory = '/home/ireland/jets/sav/2012-11-20/jet_1'
-directory = '/home/ireland/jets/sav/2012-11-20/jet_region_B'
+#directory = '/home/ireland/jets/sav/2012-11-20/jet_1'
+#directory = '/home/ireland/jets/sav/2012-11-20/jet_region_B'
+directory = '/home/ireland/jets/sav/2012-11-20/{:s}'.format(jet_number_string)
 extension = '.fits'
 
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))
@@ -84,7 +90,7 @@ for i in range(0, len(mc)):
     cbar.ax.set_ylabel('MK')
     #plt.colorbar(label='temperature (MK)')
     plt.title('maximum temperature\n{:s}'.format(mc[i].date.strftime(date_format)))
-    filepath = os.path.join(output_directory, 'jet_dem_temp_{:n}.png'.format(i))
+    filepath = os.path.join(output_directory, '{:s}_jet_dem_temp_{:n}.png'.format(jet_number_string, i))
     plt.savefig(filepath)
 
 
@@ -98,7 +104,7 @@ def myplot(fig, ax, sunpy_map):
 ani = mc.plot(plot_function=myplot)
 Writer = animation.writers['avconv']
 writer = Writer(fps=20, metadata=dict(artist='SunPy'), bitrate=18000)
-fname = os.path.join(output_directory, 'maximum_temperature.mp4')
+fname = os.path.join(output_directory, '{:s}_maximum_temperature.mp4'.format(jet_number_string))
 ani.save(fname, writer=writer)
 
 
