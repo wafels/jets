@@ -44,12 +44,16 @@ for i, observable in enumerate(observables):
         # Sample time
         ts_time[observable].append((m.date - t0).total_seconds())
 
+# Make a figure of the normalized mean intensities
 plt.close('all')
 plt.figure(1)
 for i, observable in enumerate(observables):
     d = np.asarray(ts_mean[observable])
     t = np.asarray(ts_time[observable])
-    plt.plot(t, d, label=observable)
+    plt.plot(t, d/np.nanmax(d), label=observable)
 
+plt.ylim(0, 1)
 plt.xlabel('time (seconds) since {:s}'.format(str(t0)))
-plt.ylabel('mean intensity')
+plt.ylabel('mean intensity (normalized to peak)')
+plt.legend()
+
