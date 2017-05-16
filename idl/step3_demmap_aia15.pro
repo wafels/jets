@@ -23,6 +23,7 @@ endif
 data_source = '/home/ireland/Data/jets'
 output_root = '~/jets/sav'
 jet_date = '2012-11-20'
+jet_date = '2015-02-05'
 jet_number = 1
 prep_level = '1.5'
 sep = '/'
@@ -52,6 +53,7 @@ jet_number_string = 'jet_region_A_1'
 jet_number_string = 'jet_region_A_2'
 jet_number_string = 'jet_region_A_3'
 jet_number_string = 'jet_region_A_4'
+jet_number_string = 'jet_region_1'
 ; Where the input data is
 fdir = data_source + sep + jet_date + sep + jet_number_string + '/AIA/' + prep_level + sep + 'cutout'
 fdir = data_source + sep + jet_date + sep + jet_number_string + '/SDO/AIA/' + prep_level + sep + 'cutout'
@@ -73,6 +75,7 @@ if prep_level eq '1.5' then begin
    endif else begin
       waves = ['94', '131', '171', '193', '211', '335']
       file_extension = '_cutout.fits'
+      file_extension = '.fits'
    endelse
 endif else begin
    if from_lmsal_cutout then begin

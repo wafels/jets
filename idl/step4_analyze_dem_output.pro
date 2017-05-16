@@ -14,6 +14,7 @@ END
 data_source = '~/jets/sav'
 output_root = '~/jets/img'
 jet_date = '2012-11-20'
+jet_date = '2012-02-05'
 jet_number = 1
 prep_level = '1.5'
 sep = '/'
@@ -30,6 +31,7 @@ jet_number_string = 'jet_region_A_1'
 jet_number_string = 'jet_region_A_2'
 jet_number_string = 'jet_region_A_3'
 jet_number_string = 'jet_region_A_4'
+jet_number_string = 'jet_region_1'
 
 ; Where the input data is
 fdir = data_source + sep + jet_date + sep + jet_number_string
