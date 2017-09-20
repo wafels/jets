@@ -3,12 +3,17 @@
 #
 
 import os
+import datetime
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 import astropy.constants
+
+# TODO
+# calculate path lengths to look for consistency - must be greater than 1 AU.
 
 plt.ion()
 
@@ -40,24 +45,38 @@ betat = (1. - (1./gamma2))**.5
 betat_c = betat*c
 
 # Plot limits
-v_lim = np.asarray([0, 18])
-t0_lim = [doy.min(), 327]
-v_range = np.linspace(v_lim[0], v_lim[1], 100)
+plot_doy_limits = [doy.min(), doy.max()]
+plot_v_limits = [(1/betat_c).min(), (1/betat_c).max()]
 
-# Plot the scatter
+##############################################################################
+# Plot the scatter plot
 fig = plt.figure(1)
 ax1 = plt.subplot()
 ax1.scatter(doy, 1/betat_c, s=0.25)
+ax1.set_xlim(plot_doy_limits)
+ax1.set_ylim(plot_v_limits)
 ax1.set_xlabel('day of year')
 ax1.set_ylabel('1/ion speed')
 
-# Histogram
+
+##############################################################################
+# Begin the analysis
+
+# Range of velocities we are interested in calculating eventually
+v_range = np.linspace(0, np.max(plot_v_limits), 100)
+
+# Some basic properties of how to histogram the data
 minute_bins = 5
 n_velocity_bins = 20
-bins = [24 * 60 // minute_bins, n_velocity_bins]
-hist, doy_bins, velocity_bins = np.histogram2d(doy, 1/betat_c, bins=bins)
+
+# Part of the data that we will fit.
+histogram_velocity_range = [4.0, 14.0]
+histogram_time_range = [doy.min(), 326.25]
+histogram_bins = [24 * 60 // minute_bins, n_velocity_bins]
+hist, doy_bins, velocity_bins = np.histogram2d(doy, 1/betat_c, bins=histogram_bins, range=[histogram_time_range, histogram_velocity_range])
 
 
+# Calculate the bin center given bins
 def histogram_bin_centers(bins):
     return 0.5 * (bins[:-1] + bins[1:])
 
@@ -65,55 +84,97 @@ doy_bins_centers = histogram_bin_centers(doy_bins)
 velocity_bins_centers = histogram_bin_centers(velocity_bins)
 
 
+# Profile of the edge - a logistic function
 def edge_function(t, c, a, t0, sigma):
     onent = (t - t0)/sigma
-
     return c + a/(1 + np.exp(-onent))
 
-# Maximum day to consider
-max_doy = 326
-max_doy_arg = np.argmin(np.abs(max_doy-doy_bins_centers))
-x = doy_bins_centers[0:max_doy_arg]
+
+# Simple class to fit the enhancement edge
+class FitEnhancementEdge:
+    def __init__(self, edge_function, x, y, p0):
+        self.edge_function = edge_function
+        self.x = x
+        self.y = y
+        self.p0 = p0
+        self.nan = np.asarray([np.nan, np.nan, np.nan, np.nan, np.nan])
+        try:
+            self.fitted_values, self.pcov = curve_fit(self.edge_function, self.x, self.y, p0=self.p0)
+            self.perr = np.sqrt(np.diag(self.pcov))
+            self.t0 = self.fitted_values[2]
+            self.best_fit = self.edge_function(self.x,
+                                               self.fitted_values[0],
+                                               self.fitted_values[1],
+                                               self.fitted_values[2],
+                                               self.fitted_values[3])
+            self.fitted = True
+        except:
+            self.fitted_values = self.nan
+            self.perr = self.nan
+            self.t0 = np.nan
+            self.best_fit = np.nan
+            self.fitted = False
+
 
 
 # Do the fit
-keep = []
+fits = []
 v = []
 t0 = []
 for i in range(0, n_velocity_bins):
-    if velocity_bins[i] > 3.0:
-        this_velocity = hist[:, i]
-        y = hist[0:max_doy_arg, i]
-        v.append(velocity_bins[i])
-        try:
-            fitted_values, pcov = curve_fit(edge_function, x, y, p0=[1.0, 12, 325.5, 0.2])
-            perr = np.sqrt(np.diag(pcov))
-            this_t0 = fitted_values[2]
-        except:
-            perr = np.asarray([np.nan, np.nan, np.nan, np.nan, np.nan])
-            fitted_values = np.asarray([np.nan, np.nan, np.nan, np.nan, np.nan])
-            this_t0 = np.nan
-        keep.append((y, fitted_values, perr))
-        t0.append(this_t0)
+    this_v = velocity_bins_centers[i]
+    p0 = [1.0, 12, 325.5, 0.1]
+    he3 = hist[:, i]
+    fee = FitEnhancementEdge(edge_function, doy_bins_centers, he3, p0)
+    v.append(this_v)
+    t0.append(fee.t0)
+    fits.append(fee)
+
+# Plot all the enhancement edge fits
+nfit = 0
+for fit in fits:
+    if fit.fitted:
+        nfit += 1
+
+nsquare = np.int(np.ceil(np.sqrt(nfit)))
+fig, ax = plt.subplots(nsquare, nsquare)
+for i in range(0, nsquare):
+    for j in range(0, nsquare):
+        index = j + i*nsquare
+        if index < len(fits):
+            this_fit = fits[index]
+            if this_fit.fitted:
+                ax[i, j].plot(this_fit.x, this_fit.y)
+                ax[i, j].plot(this_fit.x, this_fit.best_fit)
+                ax[i, j].set_title('v={:n}'.format(v[index]))
+plt.tight_layout()
 
 # Convert to numpy arrays
 v = np.asarray(v)
 t0 = np.asarray(t0)
 
-
+# Calculate the velocity error - just the bin width
 v_err = 0.5 * (velocity_bins_centers[1] - velocity_bins_centers[0]) * np.ones(shape=len(v))
-t0_err = np.asarray([this[2][1] for this in keep])
-non_finite = np.where(~np.isfinite(t0_err))[0]
-for nf in non_finite:
-    t0_err[nf] = np.nanmedian(t0_err)
+
+# Estimate the error in locating the edge
+t0_error_estimate = np.zeros(len(fits))
+t0_error_estimate[:] = np.nan
+for i, this_fit in enumerate(fits):
+    if this_fit.fitted:
+        t0_error = this_fit.perr[2]
+        sigma = this_fit.fitted_values[3]
+        if np.isfinite(t0_error) and np.isfinite(sigma):
+            t0_error_estimate[i] = np.max([t0_error, sigma])
 
 
 # Now fit the doy as a function of velocity
 t0_finite = np.isfinite(t0)
-x = v[t0_finite]
-y = t0[t0_finite]
-w = t0_err[t0_finite]
-fit, cov = np.polyfit(x, y, 1, w=1/w, cov=True)
+t0_error_estimate_finite = np.isfinite(t0_error_estimate)
+fittable_t0_values = np.logical_and(t0_finite, t0_error_estimate_finite)
+v_fittable = v[fittable_t0_values]
+t0_fittable = t0[fittable_t0_values]
+w_fittable = t0_error_estimate[fittable_t0_values]
+fit, cov = np.polyfit(v_fittable, t0_fittable, 1, w=1.0/w_fittable, cov=True)
 
 # Calculate the bestfit
 best_fit = np.polyval(fit, v_range)
@@ -134,25 +195,45 @@ class FitsErrorRange:
         self.polynomial = np.asarray([self.gradient, self.constant])
         self.best_fit = np.polyval(self.polynomial, self.x)
 
-        self.best_estimate_day = np.floor(self.constant)
-        self.best_estimate_hour = 24*(self.best_estimate_day - self.constant)
 
 for m1 in [-1, 0, 1]:
     for m0 in [-1, 0, 1]:
         fer = FitsErrorRange(v_range, fit, fit_error, [m1, m0])
-        if m1 == 0 and m0 == 0:
-            kwargs = {"color": "r", "linestyle": "-", "linewidth": 2}
+        label = None
+        if m1 == 0:
+            if m0 == 0:
+                kwargs = {"color": "r", "linestyle": "-", "linewidth": 2}
+            else:
+                kwargs = {"color": "r", "linestyle": "dashed", "linewidth": 2}
+            dt = datetime.datetime(2012, 1, 1) + datetime.timedelta(fer.constant - 1)
+            label = "{:s} UT (error={:n} x sigma)".format(dt.strftime("%Y-%m-%d %H:%M:%S"), m0)
         else:
             kwargs = {"color": "k", "linestyle": "dashed", "linewidth": 0.5}
-        ax1.plot(fer.best_fit, fer.x, **kwargs)
-ax1.set_ylim(v_lim[0], v_lim[1])
-ax1.set_xlim(t0_lim[0], t0_lim[1])
+        ax1.plot(fer.best_fit, fer.x, label=label, **kwargs)
+ax1.axvline(p0[2], color='k', linestyle='dashed', label='initial profile center')
+ax1.legend(fontsize=10)
 
 
 # Plot the fit
-fig = plt.figure(2)
+fig = plt.figure(3)
 ax2 = plt.subplot()
-ax2.errorbar(v, t0, xerr=v_err, yerr=t0_err, color='k')
+ax2.errorbar(v_fittable, t0_fittable, xerr=v_err[fittable_t0_values], yerr=w_fittable, color='k')
 ax2.plot(fer.x, fer.best_fit, color='r')
-ax2.set_xlim(v_lim)
 
+
+# Plot the scatter and the fit edges and the best fit
+fig = plt.figure(5)
+ax5 = plt.subplot()
+ax5.scatter(doy, 1/betat_c, s=0.25)
+ax5.set_xlabel('day of year')
+ax5.set_ylabel('1/ion speed')
+ax5.set_ylim(plot_v_limits)
+ax5.set_xlim(plot_doy_limits)
+ax5.axvline(histogram_time_range[0], color='k', label='fit limit', linestyle=":")
+ax5.axvline(histogram_time_range[1], color='k', linestyle=":")
+ax5.axhline(v_range[0], color='k', linestyle=":")
+ax5.axhline(histogram_velocity_range[1], color='k', linestyle=":")
+
+ax5.legend(fontsize=10)
+ax5.errorbar(t0_fittable, v_fittable, yerr=v_err[fittable_t0_values], xerr=w_fittable, color='k')
+ax5.plot(fer.best_fit, fer.x, color='r')
