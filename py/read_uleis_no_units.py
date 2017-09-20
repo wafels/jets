@@ -66,7 +66,7 @@ ax1.set_ylabel('1/ion speed')
 v_range = np.linspace(0, np.max(plot_v_limits), 100)
 
 # Some basic properties of how to histogram the data
-minute_bins = 5
+minute_bins = 15
 n_velocity_bins = 20
 
 # Part of the data that we will fit.
@@ -173,7 +173,7 @@ t0_error_estimate_finite = np.isfinite(t0_error_estimate)
 fittable_t0_values = np.logical_and(t0_finite, t0_error_estimate_finite)
 v_fittable = v[fittable_t0_values]
 t0_fittable = t0[fittable_t0_values]
-w_fittable = t0_error_estimate[fittable_t0_values]
+w_fittable = t0_error_estimate[fittable_t0_values] + minute_bins/(24*60.0)
 fit, cov = np.polyfit(v_fittable, t0_fittable, 1, w=1.0/w_fittable, cov=True)
 
 # Calculate the bestfit
@@ -182,43 +182,11 @@ best_fit = np.polyval(fit, v_range)
 fit_error = np.sqrt(np.diag(cov))
 
 
-class FitsErrorRange:
-    def __init__(self, x, fit, fit_error, sigma):
-        self.x = x
-        self.fit = fit
-        self.fit_error = fit_error
-        self.sigma = sigma
-
-        self.gradient = self.fit[0] + self.sigma[0]*self.fit_error[0]
-        self.constant = self.fit[1] + self.sigma[1]*self.fit_error[1]
-
-        self.polynomial = np.asarray([self.gradient, self.constant])
-        self.best_fit = np.polyval(self.polynomial, self.x)
-
-
-for m1 in [-1, 0, 1]:
-    for m0 in [-1, 0, 1]:
-        fer = FitsErrorRange(v_range, fit, fit_error, [m1, m0])
-        label = None
-        if m1 == 0:
-            if m0 == 0:
-                kwargs = {"color": "r", "linestyle": "-", "linewidth": 2}
-            else:
-                kwargs = {"color": "r", "linestyle": "dashed", "linewidth": 2}
-            dt = datetime.datetime(2012, 1, 1) + datetime.timedelta(fer.constant - 1)
-            label = "{:s} UT (error={:n} x sigma)".format(dt.strftime("%Y-%m-%d %H:%M:%S"), m0)
-        else:
-            kwargs = {"color": "k", "linestyle": "dashed", "linewidth": 0.5}
-        ax1.plot(fer.best_fit, fer.x, label=label, **kwargs)
-ax1.axvline(p0[2], color='k', linestyle='dashed', label='initial profile center')
-ax1.legend(fontsize=10)
-
-
 # Plot the fit
 fig = plt.figure(3)
 ax2 = plt.subplot()
 ax2.errorbar(v_fittable, t0_fittable, xerr=v_err[fittable_t0_values], yerr=w_fittable, color='k')
-ax2.plot(fer.x, fer.best_fit, color='r')
+ax2.plot(v_range, best_fit, color='r')
 
 
 # Plot the scatter and the fit edges and the best fit
@@ -236,4 +204,4 @@ ax5.axhline(histogram_velocity_range[1], color='k', linestyle=":")
 
 ax5.legend(fontsize=10)
 ax5.errorbar(t0_fittable, v_fittable, yerr=v_err[fittable_t0_values], xerr=w_fittable, color='k')
-ax5.plot(fer.best_fit, fer.x, color='r')
+ax5.plot(best_fit, v_range, color='r')
