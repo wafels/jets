@@ -8,15 +8,22 @@ import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import rc
 from scipy.optimize import curve_fit
 
 import astropy.constants
+
+rc('text', usetex=True)
 
 # TODO
 # calculate path lengths to look for consistency - must be greater than 1 AU.
 
 plt.ion()
 
+# Which year did this event occur in?
+year = 2012
+
+# Where is the data?
 file_name = 'WPHASMOO_2012_325-2.pha'
 directory = '~/Data/jets/2012-11-20/'
 filepath = os.path.expanduser(os.path.join(directory, file_name))
@@ -48,6 +55,11 @@ betat_c = betat*c
 plot_doy_limits = [doy.min(), doy.max()]
 plot_v_limits = [0.0, (1/betat_c).max()]
 
+# Plot labels
+time_label = 'day of year'
+speed_label = '1/ion speed'
+data_label = r'ACE/ULEIS'
+
 ##############################################################################
 # Plot the scatter plot
 fig = plt.figure(1)
@@ -55,8 +67,9 @@ ax1 = plt.subplot()
 ax1.scatter(doy, 1/betat_c, s=0.25)
 ax1.set_xlim(plot_doy_limits)
 ax1.set_ylim(plot_v_limits)
-ax1.set_xlabel('day of year')
-ax1.set_ylabel('1/ion speed')
+ax1.set_xlabel(time_label)
+ax1.set_ylabel(speed_label)
+ax1.set_title(data_label)
 
 
 ##############################################################################
@@ -92,12 +105,14 @@ def edge_function(t, c, a, t0, sigma):
 
 # Simple class to fit the enhancement edge
 class FitEnhancementEdge:
-    def __init__(self, this_edge_function, x, y, p0, fractional_increase=[0.1, 1000]):
+    def __init__(self, this_edge_function, x, y, p0, fractional_increase=None, npoints=1000):
         self.edge_function = this_edge_function
         self.x = x
         self.y = y
         self.p0 = p0
         self.nan = np.asarray([np.nan, np.nan, np.nan, np.nan, np.nan])
+        self.fractional_increase = fractional_increase
+        self.npoints = npoints
         try:
             self.fitted_values, self.pcov = curve_fit(self.edge_function, self.x, self.y, p0=self.p0)
             self.perr = np.sqrt(np.diag(self.pcov))
@@ -108,17 +123,15 @@ class FitEnhancementEdge:
                                                self.fitted_values[2],
                                                self.fitted_values[3])
             self.fitted = True
-            if fractional_increase[0] is not None:
-                fraction = fractional_increase[0]
-                npoint = fractional_increase[1]
-                z = np.linspace(self.x.min(), self.x.max(), npoint)
+            if fractional_increase is not None:
+                z = np.linspace(self.x.min(), self.x.max(), self.npoints)
                 tef = this_edge_function(z,
                                          self.fitted_values[0],
                                          self.fitted_values[1],
                                          self.fitted_values[2],
                                          self.fitted_values[3])
                 tef_range = tef.max() - tef.min()
-                tef_target = tef.min() + fraction*tef_range
+                tef_target = tef.min() + self.fractional_increase*tef_range
                 index_closest_to_target = np.argmin(np.abs(tef - tef_target))
                 self.t0 = z[index_closest_to_target]
         except:
@@ -137,7 +150,7 @@ for i in range(0, n_velocity_bins):
     this_v = velocity_bins_centers[i]
     p0 = [1.0, 12, 325.5, 0.1]
     he3 = hist[:, i]
-    fee = FitEnhancementEdge(edge_function, doy_bins_centers, he3, p0)
+    fee = FitEnhancementEdge(edge_function, doy_bins_centers, he3, p0, fractional_increase=None)
     v.append(this_v)
     t0.append(fee.t0)
     fits.append(fee)
@@ -149,10 +162,17 @@ for fit in fits:
         nfit += 1
 
 nsquare = np.int(np.ceil(np.sqrt(nfit)))
-fig, ax = plt.subplots(nsquare, nsquare)
-for i in range(0, nsquare):
-    for j in range(0, nsquare):
-        index = j + i*nsquare
+if np.mod(nfit, nsquare) != 0:
+    nx = nsquare
+    ny = nsquare
+else:
+    nx = nsquare
+    ny = nsquare-1
+
+fig, ax = plt.subplots(ny, nx)
+for i in range(0, ny):
+    for j in range(0, nx):
+        index = j + i*ny
         if index < len(fits):
             this_fit = fits[index]
             if this_fit.fitted:
@@ -191,30 +211,55 @@ fit, cov = np.polyfit(v_fittable, t0_fittable, 1, w=1.0/w_fittable, cov=True)
 
 # Calculate the bestfit
 best_fit = np.polyval(fit, v_range)
-
 fit_error = np.sqrt(np.diag(cov))
+
+one_sigma_low = 100000000.0
+one_sigma_high = -100000000.0
+for i in (-1, 0, 1):
+    gradient = fit[1] + i*fit_error[1]
+    for j in (-1, 0, 1):
+        constant = fit[0] + j*fit_error[0]
+        this_bf = np.polyval([constant, gradient], v_range)
+        if this_bf[0] < one_sigma_low:
+            one_sigma_low = this_bf[0]
+        if this_bf[0] > one_sigma_high:
+            one_sigma_high = this_bf[0]
+
 
 
 # Plot the fit
 fig = plt.figure(3)
-ax2 = plt.subplot()
-ax2.errorbar(v_fittable, t0_fittable, xerr=v_err[fittable_t0_values], yerr=w_fittable, color='k')
-ax2.plot(v_range, best_fit, color='r')
+ax3 = plt.subplot()
+ax3.errorbar(v_fittable, t0_fittable, xerr=v_err[fittable_t0_values], yerr=w_fittable, color='k')
+ax3.plot(v_range, best_fit, color='r')
+ax3.set_xlabel(speed_label)
+ax3.set_ylabel(time_label)
 
+
+def itl(year, doy):
+    initial_time = datetime.datetime(year, 1, 1) + datetime.timedelta(doy - 1)
+    return initial_time.strftime("%H:%M:%S")
 
 # Plot the scatter and the fit edges and the best fit
+fractional_increase = str(fee.fractional_increase)
+one_sigma_high_label = itl(year, one_sigma_high)
+one_sigma_low_label = itl(year, one_sigma_low)
+initial_time_label = itl(year, fit[1]) + ' [{:s}]'.format(fractional_increase)
+initial_time_label += '\n'
+initial_time_label += r'{\it ' + one_sigma_low_label + r'}$\rightarrow$' + r'{\it ' + one_sigma_high_label + '}'
 fig = plt.figure(5)
 ax5 = plt.subplot()
 ax5.scatter(doy, 1/betat_c, s=0.25)
-ax5.set_xlabel('day of year')
-ax5.set_ylabel('1/ion speed')
+ax5.set_xlabel(time_label)
+ax5.set_ylabel(speed_label)
+ax5.set_title(data_label)
 ax5.set_ylim(plot_v_limits)
 ax5.set_xlim(plot_doy_limits)
 ax5.axvline(histogram_time_range[0], color='k', label='fit limit', linestyle=":")
 ax5.axvline(histogram_time_range[1], color='k', linestyle=":")
+ax5.axvline(fit[1], color='k', label=initial_time_label, linestyle='dashed')
 ax5.axhline(v_range[0], color='k', linestyle=":")
 ax5.axhline(histogram_velocity_range[1], color='k', linestyle=":")
-
-ax5.legend(fontsize=10)
+ax5.legend(fontsize=10, loc='top right')
 ax5.errorbar(t0_fittable, v_fittable, yerr=v_err[fittable_t0_values], xerr=w_fittable, color='k')
 ax5.plot(best_fit, v_range, color='r')
