@@ -129,13 +129,6 @@ class FitEnhancementEdge:
             self.fitted = False
 
 
-# Function to find increases along the edge_function
-def location_given_fraction_increase_in_edge_function(this_edge_function, x, p0, fraction=0.01, npoint=1000):
-    z = np.linspace(x.min(), x.max(), npoint)
-    tef = this_edge_function(z, p0[0], p0[1], p0[2], p0[3])
-    index_closest_to_fractional_increase = np.argmin(np.abs(tef - (1+fraction)*tef[0]))
-    return z[index_closest_to_fractional_increase]
-
 # Do the fit
 fits = []
 v = []
