@@ -92,7 +92,7 @@ def edge_function(t, c, a, t0, sigma):
 
 # Simple class to fit the enhancement edge
 class FitEnhancementEdge:
-    def __init__(self, this_edge_function, x, y, p0, fractional_increase=[0.5, 1000]):
+    def __init__(self, this_edge_function, x, y, p0, fractional_increase=[0.1, 1000]):
         self.edge_function = this_edge_function
         self.x = x
         self.y = y
@@ -117,8 +117,8 @@ class FitEnhancementEdge:
                                          self.fitted_values[1],
                                          self.fitted_values[2],
                                          self.fitted_values[3])
-                tef_range = tef.max() - tef_min()
-                tef_target = tef_min() + fraction*tef_range
+                tef_range = tef.max() - tef.min()
+                tef_target = tef.min() + fraction*tef_range
                 index_closest_to_target = np.argmin(np.abs(tef - tef_target))
                 self.t0 = z[index_closest_to_target]
         except:
@@ -165,7 +165,7 @@ for i in range(0, nsquare):
             if this_fit.fitted:
                 ax[i, j].plot(this_fit.x, this_fit.y)
                 ax[i, j].plot(this_fit.x, this_fit.best_fit)
-                ax[i, j].axvline(t0[index])
+                ax[i, j].axvline(t0[index], color='k')
                 ax[i, j].set_title('v={:n}'.format(v[index]))
 plt.tight_layout()
 
