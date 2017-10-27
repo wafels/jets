@@ -9,6 +9,8 @@ from sunpy.time import parse_time
 hours = mdates.HourLocator()
 hoursFmt = mdates.DateFormatter('%Y-%m-%d %H:%M')
 
+fontsize = 20
+
 # jet_date = '2012-11-20'
 # jet_number_string = 'jet_region_A_4'
 
@@ -69,10 +71,10 @@ for i, observable in enumerate(observables):
     t = ts_datetime[observable]
     ax.plot(t, d/np.nanmax(d), label=observable)
 
-ax.set_xlabel('date/time')
-ax.set_ylabel('mean intensity (normalized to peak)')
+ax.set_xlabel('date/time', fontsize=fontsize)
+ax.set_ylabel('mean intensity (normalized to peak)', fontsize=fontsize)
 ax.axvline(parse_time('2015-02-06 00:00:00'), linestyle=':', label='2015-02-06', color='k')
-ax.legend()
+ax.legend(fontsize=fontsize)
 ax.grid()
 ax.xaxis.set_major_locator(hours)
 ax.xaxis.set_major_formatter(hoursFmt)

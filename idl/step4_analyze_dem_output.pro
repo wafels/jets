@@ -14,7 +14,7 @@ END
 data_source = '~/jets/sav'
 output_root = '~/jets/img'
 jet_date = '2012-11-20'
-jet_date = '2012-02-05'
+jet_date = '2015-02-05'
 jet_number = 1
 prep_level = '1.5'
 sep = '/'
@@ -37,7 +37,7 @@ jet_number_string = 'jet_region_1'
 fdir = data_source + sep + jet_date + sep + jet_number_string
 
 ; Input file names
-fnames = file_search(fdir, '*.sav')
+tfnames = file_search(fdir, '*.sav')
 ;fnames = ['/home/ireland/jets/sav/2012-11-20/jet_0/2012-11-20_jet_0_2012_11_20T01_32_36.895_1.5.sav']
 ;fnames = ['/home/ireland/jets/sav/2012-11-20/jet_0/2012-11-20_jet_0_2012_11_20T01_36_49.526_1.5.sav']
 
@@ -51,9 +51,9 @@ endif else begin
 endelse
 
 ;
-for k = 0, n_elements(fnames)-1 do begin
+for k = 0, n_elements(tfnames)-1 do begin
 ; Next filename
-   input_fullpath = fnames[k]
+   input_fullpath = tfnames[k]
    print, ' '
    print,'Restoring ' + input_fullpath
 ; Restore the data

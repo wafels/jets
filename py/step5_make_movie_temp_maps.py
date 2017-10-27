@@ -16,8 +16,12 @@ jet_number_string = 'jet_region_A_1'
 jet_number_string = 'jet_region_A_2'
 jet_number_string = 'jet_region_A_3'
 jet_number_string = 'jet_region_A_4'
+jet_number_string = 'jet_region_1'
 
-output_directory = os.path.expanduser('~/jets/img/2012-11-20/{:s}'.format(jet_number_string))
+jet_date = '2015-02-05'
+
+
+output_directory = os.path.expanduser('~/jets/img/{:s}/{:s}'.format(jet_date, jet_number_string))
 date_format = "%Y/%m/%d %H:%M:%S"
 
 
@@ -59,7 +63,7 @@ def movie_normalization(mc, percentile_interval=99.0, stretch=None):
 
 #directory = '/home/ireland/jets/sav/2012-11-20/jet_1'
 #directory = '/home/ireland/jets/sav/2012-11-20/jet_region_B'
-directory = '/home/ireland/jets/sav/2012-11-20/{:s}'.format(jet_number_string)
+directory = '/home/ireland/jets/sav/{:s}/{:s}'.format(jet_date, jet_number_string)
 extension = '.fits'
 
 file_list = sorted(glob.glob('{:s}{:s}*{:s}'.format(directory, os.sep, extension)))

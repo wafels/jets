@@ -14,7 +14,7 @@
 ; of the data that are available.  Zero indicates use the specified
 ; times in the requested_times array, any other integer means
 ; calculate at those number of times between the start and the end.
-equally_spaced_times = 60
+equally_spaced_times = 150
 if equally_spaced_times eq 0 then begin
    requested_times = ['2012-11-20 01:30:00']
 endif
@@ -29,6 +29,9 @@ prep_level = '1.5'
 sep = '/'
 prt = '_'
 from_lmsal_cutout = 0
+
+analysis_start_time = '2015-02-05 23:00:00'
+analysis_end_time = '2015-02-06 00:15:00'
 
   ; Example script to recover the DEM from AIA Lvl1.5 fits files
   ; The specific AIA fits used here are not include with the code
@@ -141,6 +144,9 @@ endfor
 ;
 ; Determine the times at which the DEM is to be calculated. 
 ;
+earliest_time = anytim2tai(analysis_start_time)
+latest_time = anytim2tai(analysis_end_time)
+
 if equally_spaced_times ne 0 then begin
    requested_times = dblarr(equally_spaced_times)
    for  i = 0, equally_spaced_times-1 do begin

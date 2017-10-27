@@ -46,7 +46,7 @@ betat_c = betat*c
 
 # Plot limits
 plot_doy_limits = [doy.min(), doy.max()]
-plot_v_limits = [(1/betat_c).min(), (1/betat_c).max()]
+plot_v_limits = [0.0, (1/betat_c).max()]
 
 ##############################################################################
 # Plot the scatter plot
@@ -92,8 +92,8 @@ def edge_function(t, c, a, t0, sigma):
 
 # Simple class to fit the enhancement edge
 class FitEnhancementEdge:
-    def __init__(self, edge_function, x, y, p0):
-        self.edge_function = edge_function
+    def __init__(self, this_edge_function, x, y, p0, fractional_increase=[0.5, 1000]):
+        self.edge_function = this_edge_function
         self.x = x
         self.y = y
         self.p0 = p0
@@ -108,6 +108,19 @@ class FitEnhancementEdge:
                                                self.fitted_values[2],
                                                self.fitted_values[3])
             self.fitted = True
+            if fractional_increase[0] is not None:
+                fraction = fractional_increase[0]
+                npoint = fractional_increase[1]
+                z = np.linspace(self.x.min(), self.x.max(), npoint)
+                tef = this_edge_function(z,
+                                         self.fitted_values[0],
+                                         self.fitted_values[1],
+                                         self.fitted_values[2],
+                                         self.fitted_values[3])
+                tef_range = tef.max() - tef_min()
+                tef_target = tef_min() + fraction*tef_range
+                index_closest_to_target = np.argmin(np.abs(tef - tef_target))
+                self.t0 = z[index_closest_to_target]
         except:
             self.fitted_values = self.nan
             self.perr = self.nan
@@ -116,6 +129,12 @@ class FitEnhancementEdge:
             self.fitted = False
 
 
+# Function to find increases along the edge_function
+def location_given_fraction_increase_in_edge_function(this_edge_function, x, p0, fraction=0.01, npoint=1000):
+    z = np.linspace(x.min(), x.max(), npoint)
+    tef = this_edge_function(z, p0[0], p0[1], p0[2], p0[3])
+    index_closest_to_fractional_increase = np.argmin(np.abs(tef - (1+fraction)*tef[0]))
+    return z[index_closest_to_fractional_increase]
 
 # Do the fit
 fits = []
@@ -146,6 +165,7 @@ for i in range(0, nsquare):
             if this_fit.fitted:
                 ax[i, j].plot(this_fit.x, this_fit.y)
                 ax[i, j].plot(this_fit.x, this_fit.best_fit)
+                ax[i, j].axvline(t0[index])
                 ax[i, j].set_title('v={:n}'.format(v[index]))
 plt.tight_layout()
 
