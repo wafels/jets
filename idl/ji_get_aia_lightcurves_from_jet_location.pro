@@ -2,7 +2,7 @@
 ; Get AIA EUV lightcurves integrated over a region that covers where
 ; the EUV jet is
 ;
-dir = '~/Data/jets/2012-11-20'
+dir = '~/Data/jets/2012-11-20/recover_big/'
 imgdir = '~/jets/img'
 maxnfiles = 100
 
@@ -24,11 +24,12 @@ rts_obj -> set, obs_time_interval=['20-nov-12 08:00', '20-nov-12 08:25']
 ;
 ; RHESSI: load in the RHESSI data
 ;
-rhessi = {filename: 'hsi_imagecube_4tx1e_20121120_080634.fits'}
-rhessi_data =  dir + '/rhessi/' + rhessi.filename
+; rhessi = {filename: 'hsi_imagecube_4tx1e_20121120_080634.fits'}
+rhessi = {filename: 'hsi_image_20121120_080502.fits'}
+rhessi_data =  dir + '/RHESSI/' + rhessi.filename
 robj = obj_new('rhessi')
 hsi_fits2map, rhessi_data, rmaps
-rmap_of_interest = rmaps[1]
+rmap_of_interest = rmaps ; rmaps[1]
 
 ; RHESSI: Contour levels
 percent_levels = [0.95, 0.90, 0.68, 0.50]
@@ -80,7 +81,7 @@ aia = {w94: {filename: 'AIA20121120_080901_0094.fits', channel: 94}, $
     w1700: {filename: 'AIA20121120_080854_1700.fits', channel: 1700}}
 
 
-aia_filepath = dir + '/aia/1.5/'
+aia_filepath = dir + 'SDO/AIA/1.5/fulldisk/'
 
 ;
 ; AIA channel names and number of channels
@@ -152,7 +153,8 @@ data = aia_smap.data
 ;endfor
 
 ; Draw a polygon on the data and get its vertices
-drawpoly, alog(data), jet_mask_x, jet_mask_y
+tvscl, alog(data)
+drawpoly, jet_mask_x, jet_mask_y
 ; Get the jet mask index values
 jet_mask_index = polyfillv(jet_mask_x, jet_mask_y, nx, ny)
 
@@ -183,8 +185,9 @@ for i = 0, nwchannel - 1 do begin
    ps, imgdir + '/' + channel_string + '.jet_mask_overplot_rhessi_peak_contours_hmi.eps', /color, /copy, /encapsulated
    aia_lct, r, g, b, wavelnth=channel, /load
    set_line_color
-   plot_map, aia_smap, /log, bottom=11
+   plot_map, aia_smap, /log, bottom=11, grid=15, gcolor=255
    
+
    ; Overplot the mask outline
    nvertices = n_elements(jet_mask_x)
    xpos = fltarr(nvertices)
@@ -208,7 +211,7 @@ for i = 0, nwchannel - 1 do begin
    ; Define the file and load in the object
    hchannel_string = strtrim(string(hchannel), 1)
    ; Full filepath
-   hfilepath = dir + '/hmi/1.0/' + hchannel_string + '/' + hfilename
+   hfilepath = dir + 'HMI/' + hchannel_string + '/' + hfilename
    ; Define the file and load in the object
    hobj = obj_new('hmi')
    hobj -> read, hfilepath
@@ -228,11 +231,27 @@ for i = 0, nwchannel - 1 do begin
    hmi_smap_neg.data[z] = 0.0
    plot_map, hmi_smap_neg, /over, levels=-hlevel, c_color=2
 
+   ; Full filepath
+   xfilename = 'L1_XRT20121120_080857.5.fits'
+   xfilepath = dir + 'XRT/'  + xfilename
+   ; Define the file and load in the object
+   xobj = obj_new('XRT2')
+   xobj -> read, xfilepath
+   xrt_map = xobj->get(/map)
+
+   xlevel = max(xrt_map.data) / 10.0
+   plot_map, xrt_map, /over, levels=[xlevel], c_color=6
+
+   xrt_top_right = [xrt_map.xc + 0.5*xrt_map.dx*(size(xrt_map.data))[1], xrt_map.yc + 0.5*xrt_map.dy*(size(xrt_map.data))[2]]
+   loadct,3
+   oplot,[rxrange[0], xrt_top_right[0]], [xrt_top_right[1], xrt_top_right[1]],color=220,linestyle=1, thick=2
+   oplot,[xrt_top_right[0], xrt_top_right[0]], [ryrange[0], xrt_top_right[1]],color=220,linestyle=1, thick=2
+
    psclose
 
 endfor
 wdelete, 0
-
+stop
 ;
 ; Get the emission as a function of time for the jet mask
 ;
