@@ -251,7 +251,6 @@ for i = 0, nwchannel - 1 do begin
 
 endfor
 wdelete, 0
-stop
 ;
 ; Get the emission as a function of time for the jet mask
 ;
@@ -315,6 +314,10 @@ for i = 0, nwchannel - 1 do begin
 
     ; Open the plot
     psclose
+    ; Load the 16-LEVEL color table
+    loadct, 12
+    thick = 2
+    charthick = thick
     ps, imgdir + '/' + channel_string + '.jet_mask_timeseries.eps', /color, /copy, /encapsulated
 
     ; Plot the AIA emission
@@ -322,7 +325,7 @@ for i = 0, nwchannel - 1 do begin
              linestyle=0, $
              xtitle='initial time: ' + initial_time_string[i], $
              ytitle='emission (normalized to peak)', $
-             title='normalized emission', yrange=[0, 1.2], ystyle=1
+             title='normalized emission', yrange=[0, 1.2], ystyle=1, thick=thick, charsize=1.5
 
     ; add in the time of the maximum of the RHESSI flare
     ;plot, [relative_time_of_flare_maximum, relative_time_of_flare_maximum], $
@@ -335,14 +338,16 @@ for i = 0, nwchannel - 1 do begin
     rts_time_tai = anytim(rts_time, /tai)
 
     ; 3-6 keV
-    oplot, rts_time_tai - anytim2tai(initial_time_string[i]), rts_data.countrate[0, *]/max(rts_data.countrate[0, *]), linestyle=1
+    color_3_6 = 20
+    color_6_12 = 160
+    oplot, rts_time_tai - anytim2tai(initial_time_string[i]), rts_data.countrate[0, *]/max(rts_data.countrate[0, *]), linestyle=1, color=color_3_6, thick=thick
 
     ; 6-12 keV
-    oplot, rts_time_tai - anytim2tai(initial_time_string[i]), rts_data.countrate[1, *]/max(rts_data.countrate[1, *]), linestyle=2
+    oplot, rts_time_tai - anytim2tai(initial_time_string[i]), rts_data.countrate[1, *]/max(rts_data.countrate[1, *]), linestyle=2, color=color_6_12, thick=thick
 
-    xyouts, 0, 1.1, 'solid = AIA ' + channel_string
-    xyouts, 0, 1.0, 'dotted = RHESSI (3-6 keV)'
-    xyouts, 0, 0.9, 'dashed = RHESSI (6-12 keV)'
+    xyouts, 0, 1.1, 'solid = AIA ' + channel_string, charthick=charthick
+    xyouts, 0, 1.0, 'dotted = RHESSI (3-6 keV)', color=color_3_6, charthick=charthick
+    xyouts, 0, 0.9, 'dashed = RHESSI (6-12 keV)', color=color_6_12, charthick=charthick
     
 
     ; Close the image which will save it.
