@@ -1,6 +1,7 @@
 # Make difference plots for the paper
 
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from astropy.visualization import LinearStretch, PercentileInterval
@@ -45,9 +46,10 @@ for file_pair in file_pairs:
     difference_map = (subtract_maps(m1, m2)).submap(ll, ur)
 
     # Fix the color table and its scaling
-    difference_map.plot_settings['cmap'] = cm.gray
+    difference_map.plot_settings['cmap'] = cm.PiYG
     vmin, vmax = PercentileInterval(99.0).get_limits(difference_map.data)
-    difference_map.plot_settings['norm'] = ImageNormalize(vmin=vmin, vmax=vmax)
+    vlim = np.max(np.abs([vmin, vmax]))
+    difference_map.plot_settings['norm'] = ImageNormalize(vmin=-vlim, vmax=vlim)
 
     # Store the difference maps
     difference_maps.append(difference_map)
@@ -78,7 +80,7 @@ for i, dfm in enumerate(difference_maps):
 
 ax = plt.subplot(projection=difference_map)
 difference_map.plot()
-difference_map.draw_limb(color='white', linewidth=1, linestyle='solid')
+difference_map.draw_limb(color='black', linewidth=1, linestyle='solid')
 
 title = "{nickname} {measurement} difference\n{date2:{tmf2}} - {date1:{tmf1}}".format(nickname=m1.nickname,
                                                                              measurement=m1.measurement._repr_latex_(),
