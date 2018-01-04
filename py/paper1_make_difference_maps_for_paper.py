@@ -80,7 +80,7 @@ ax = plt.subplot(projection=difference_map)
 difference_map.plot()
 difference_map.draw_limb(color='white', linewidth=1, linestyle='solid')
 
-title = "{nickname} {measurement}\n{date2:{tmf2}} - {date1:{tmf1}}".format(nickname=m1.nickname,
+title = "{nickname} {measurement} difference\n{date2:{tmf2}} - {date1:{tmf1}}".format(nickname=m1.nickname,
                                                                              measurement=m1.measurement._repr_latex_(),
                                                          date2=parse_time(m2.date),
                                                          tmf2=TIME_FORMAT,
