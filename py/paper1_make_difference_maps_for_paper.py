@@ -15,6 +15,10 @@ from sunpy import config
 TIME_FORMAT = config.get("general", "time_format")
 
 
+# Heliographic Stonyhurst grid ticklabel kwargs
+hg_ticklabel_kwargs = {"color": 'blue', "style": 'italic', "fontsize": 9}
+
+
 def subtract_maps(m1, m2):
     s_data = (m1.data / m1.exposure_time) - (m2.data / m2.exposure_time)
     return sunpy.map.Map(s_data, m2.meta)
@@ -45,7 +49,7 @@ file_pairs = [['jet_region_A_0/SDO/AIA/1.5/fulldisk/171/AIA20121120_000011_0171.
 
 # Submap location
 lower_left_location = [685, -400] * u.arcsec
-upper_right_location = [980, -220] * u.arcsec
+upper_right_location = [950, -220] * u.arcsec
 
 # For each file pair, make a difference image
 difference_maps = []
@@ -183,19 +187,19 @@ for row in range(0, nrows):
         lon = overlay[0]
         lat = overlay[1]
 
+        lon.set_ticks(spacing=10*u.degree)
         lon.set_ticks_visible(False)
-        lon.set_ticks(color='blue')
         lon.set_ticklabel_visible(True)
-        lon.set_ticklabel(color='blue')
+        lon.set_ticklabel(**hg_ticklabel_kwargs)
         lon.coord_wrap = 180
         lon.set_major_formatter('dd')
 
+        lat.set_ticks([-16, -21] * u.degree)
         lat.set_ticks_visible(False)
         lat.set_ticks(color='blue')
-        lat.set_ticklabel_visible(False)
-        lat.set_ticklabel(color='blue')
-
-        overlay.grid(color='blue', linewidth=2, linestyle='dashed')
+        lat.set_ticklabel_visible(True)
+        lat.set_ticklabel(**hg_ticklabel_kwargs)
+        lat.set_major_formatter('dd')
 
         tx, ty = ax.coords
         tx.set_major_formatter('s')
@@ -205,6 +209,7 @@ for row in range(0, nrows):
             ax.set_xlabel('')
             tx.set_ticklabel_visible(False)
             tx.set_ticks_visible(False)
+            lat.set_ticklabel_position('l')
 
         # Top middle and right
         if row == 0 and (col == 1 or col == 2):
@@ -217,10 +222,15 @@ for row in range(0, nrows):
 
         # Bottom left
         if row == 1 and col == 0:
-            pass
+            lat.set_ticklabel_position('l')
 
         # Bottom middle and right
         if row == 1 and (col == 1 or col == 2):
             ax.set_ylabel('')
             ty.set_ticklabel_visible(False)
             ty.set_ticks_visible(False)
+
+        overlay.grid(color='blue', linewidth=1, linestyle='dashed')
+
+plt.tight_layout(rect=(0.05, 0.05, 1, 1))
+plt.show()

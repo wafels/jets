@@ -32,6 +32,9 @@ bbox = dict(facecolor='white', alpha=1.0)
 arrowprops = dict(facecolor='white', shrink=0.05)
 fontsize = 24
 
+# Heliographic Stonyhurst grid ticklabel kwargs
+hg_ticklabel_kwargs = {"color": 'blue', "style": 'italic', "fontsize": 9}
+
 # Make the plot
 plt.ion()
 plt.close('all')
@@ -43,16 +46,23 @@ ax1 = fig.add_subplot(1, 2, 1, projection=m1s.wcs)
 ax1.coords[1].set_major_formatter('s.s')
 ax1.coords[0].set_major_formatter('s.s')
 m1s.plot(axes=ax1)
+title = ax1.get_title()
+ax1.set_title(title + '\n ')
 overlay = ax1.get_coords_overlay('heliographic_stonyhurst')
 lon = overlay[0]
-lat = overlay[1]
 lon.set_ticks_visible(False)
-lat.set_ticks_visible(False)
-lat.set_ticklabel_visible(False)
-lon.set_ticklabel_visible(False)
+lon.set_ticklabel_visible(True)
 lon.coord_wrap = 180
 lon.set_major_formatter('dd')
-overlay.grid(linestyle='solid', color='w')
+lon.set_ticklabel(**hg_ticklabel_kwargs)
+
+lat = overlay[1]
+lat.set_ticks_visible(False)
+lat.set_ticklabel_visible(True)
+lat.set_ticklabel_position('l')
+lat.set_ticklabel(**hg_ticklabel_kwargs)
+
+overlay.grid(linestyle='dotted', color='white')
 ax1.coords.grid(alpha=0.0)
 ax1.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
 ax1.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
@@ -62,16 +72,23 @@ ax2 = fig.add_subplot(1, 2, 2, projection=m2s.wcs)
 ax2.coords[1].set_major_formatter('s.s')
 ax2.coords[0].set_major_formatter('s.s')
 m2s.plot(axes=ax2)
+title = ax2.get_title()
+ax2.set_title(title + '\n ')
 overlay = ax2.get_coords_overlay('heliographic_stonyhurst')
 lon = overlay[0]
-lat = overlay[1]
 lon.set_ticks_visible(False)
-lat.set_ticks_visible(False)
-lat.set_ticklabel_visible(False)
-lon.set_ticklabel_visible(False)
+lon.set_ticklabel_visible(True)
 lon.coord_wrap = 180
 lon.set_major_formatter('dd')
-overlay.grid(linestyle='solid', color='w')
+lon.set_ticklabel(**hg_ticklabel_kwargs)
+
+lat = overlay[1]
+lat.set_ticks_visible(False)
+lat.set_ticklabel_visible(True)
+lat.set_ticklabel_position('l')
+lat.set_ticklabel(**hg_ticklabel_kwargs)
+
+overlay.grid(linestyle='dotted', color='white')
 ax2.coords.grid(alpha=0.0)
 ax2.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
 ax2.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
