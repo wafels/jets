@@ -16,7 +16,7 @@ TIME_FORMAT = config.get("general", "time_format")
 
 
 def subtract_maps(m1, m2):
-    s_data = m1.data - m2.data
+    s_data = (m1.data / m1.exposure_time) - (m2.data / m2.exposure_time)
     return sunpy.map.Map(s_data, m2.meta)
 #
 #
@@ -24,8 +24,23 @@ def subtract_maps(m1, m2):
 root = os.path.expanduser('~/Data/jets/2012-11-20')
 
 # The images we wish to subtract
-file_pairs = [['aia.lev1.171A_2012-11-20T00_00_11.34Z.image_lev1.fits',
-               'aia.lev1.171A_2012-11-20T00_04_35.35Z.image_lev1.fits']
+file_pairs = [['jet_region_A_0/SDO/AIA/1.5/fulldisk/171/AIA20121120_000011_0171.fits',
+               'jet_region_A_0/SDO/AIA/1.5/fulldisk/171/AIA20121120_000459_0171.fits'],
+
+              ['jet_region_A_1/SDO/AIA/1.5/fulldisk/171/AIA20121120_012947_0171.fits',
+               'jet_region_A_1/SDO/AIA/1.5/fulldisk/171/AIA20121120_013447_0171.fits'],
+
+              ['jet_region_A_5/SDO/AIA/1.5/fulldisk/171/AIA20121120_014011_0171.fits',
+               'jet_region_A_5/SDO/AIA/1.5/fulldisk/171/AIA20121120_014359_0171.fits'],
+
+              ['jet_region_A_2/SDO/AIA/1.5/fulldisk/171/AIA20121120_023211_0171.fits',
+               'jet_region_A_2/SDO/AIA/1.5/fulldisk/171/AIA20121120_023747_0171.fits'],
+
+              ['jet_region_A_4/SDO/AIA/1.5/fulldisk/171/AIA20121120_030959_0171.fits',
+               'jet_region_A_4/SDO/AIA/1.5/fulldisk/171/AIA20121120_031459_0171.fits'],
+
+              ['jet_region_A_6/SDO/AIA/1.5/fulldisk/171/AIA20121120_053511_0171.fits',
+               'jet_region_A_6/SDO/AIA/1.5/fulldisk/171/AIA20121120_054011_0171.fits'],
               ]
 
 # Submap location
@@ -77,7 +92,7 @@ for i, dfm in enumerate(difference_maps):
     pass
 """
 
-
+"""
 ax = plt.subplot(projection=difference_map)
 difference_map.plot()
 difference_map.draw_limb(color='black', linewidth=1, linestyle='solid')
@@ -115,6 +130,97 @@ overlay.grid(color='blue', linewidth=2, linestyle='dashed')
 tx, ty = ax.coords
 tx.set_major_formatter('s')
 ty.set_major_formatter('s')
-plt.colorbar(fraction=0.035, pad=0.03, shrink=0.75, label='change in DN')
+plt.colorbar(fraction=0.035, pad=0.03, shrink=0.75, label='change in DN/s')
 #plt.tight_layout()
 plt.show()
+"""
+
+nrows = 2
+ncols = 3
+plot_size_scale = 6
+
+fig, axs = plt.subplots(nrows=nrows, ncols=ncols, subplot_kw=dict(projection=difference_map),
+                        figsize=(ncols*plot_size_scale, nrows*plot_size_scale))
+
+for row in range(0, nrows):
+    for col in range(0, ncols):
+
+        dfm_index = row*ncols + col
+
+        m1 = sunpy.map.Map(os.path.join(root, file_pairs[dfm_index][0]))
+        m2 = sunpy.map.Map(os.path.join(root, file_pairs[dfm_index][1]))
+
+        # Create the sky coordinates
+        ll = SkyCoord(lower_left_location[0], lower_left_location[1], frame=m2.coordinate_frame)
+        ur = SkyCoord(upper_right_location[0], upper_right_location[1], frame=m2.coordinate_frame)
+
+        # Create the difference map of the region of interest
+        dfm = (subtract_maps(m1, m2)).submap(ll, ur)
+
+        # Fix the color table and its scaling
+        dfm.plot_settings['cmap'] = cm.gray  # cm.PiYG
+        vmin, vmax = PercentileInterval(99.0).get_limits(dfm.data)
+        vlim = np.max(np.abs([vmin, vmax]))
+        dfm.plot_settings['norm'] = ImageNormalize(vmin=-vlim, vmax=vlim)
+
+        ax = axs[row, col]
+        dfm.plot(axes=ax)
+        dfm.draw_limb(color='black', linewidth=1, linestyle='solid')
+
+        title = "{nickname} {measurement} difference\n{date2:{tmf2}} - {date1:{tmf1}}".format(nickname=m1.nickname,
+                                                                                     measurement=m1.measurement._repr_latex_(),
+                                                                 date2=parse_time(m2.date),
+                                                                 tmf2=TIME_FORMAT,
+                                                                 date1=parse_time(m1.date),
+                                                                 tmf1=TIME_FORMAT)
+
+        ax.set_title(title + '\n')
+        ax.grid(True)
+        ax.coords.grid(color='orange', linestyle='solid')
+
+        # Manually plot a heliographic overlay.
+        overlay = ax.get_coords_overlay('heliographic_stonyhurst')
+        lon = overlay[0]
+        lat = overlay[1]
+
+        lon.set_ticks_visible(False)
+        lon.set_ticks(color='blue')
+        lon.set_ticklabel_visible(True)
+        lon.set_ticklabel(color='blue')
+        lon.coord_wrap = 180
+        lon.set_major_formatter('dd')
+
+        lat.set_ticks_visible(False)
+        lat.set_ticks(color='blue')
+        lat.set_ticklabel_visible(False)
+        lat.set_ticklabel(color='blue')
+
+        overlay.grid(color='blue', linewidth=2, linestyle='dashed')
+
+        tx, ty = ax.coords
+        tx.set_major_formatter('s')
+        ty.set_major_formatter('s')
+        # Top left
+        if col == 0 and row == 0:
+            ax.set_xlabel('')
+            tx.set_ticklabel_visible(False)
+            tx.set_ticks_visible(False)
+
+        # Top middle and right
+        if row == 0 and (col == 1 or col == 2):
+            ax.set_xlabel('')
+            ax.set_ylabel('')
+            tx.set_ticklabel_visible(False)
+            tx.set_ticks_visible(False)
+            ty.set_ticklabel_visible(False)
+            ty.set_ticks_visible(False)
+
+        # Bottom left
+        if row == 1 and col == 0:
+            pass
+
+        # Bottom middle and right
+        if row == 1 and (col == 1 or col == 2):
+            ax.set_ylabel('')
+            ty.set_ticklabel_visible(False)
+            ty.set_ticks_visible(False)
