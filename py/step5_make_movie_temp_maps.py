@@ -19,6 +19,7 @@ jet_number_string = 'jet_region_A_4'
 jet_number_string = 'jet_region_1'
 
 jet_date = '2015-02-05'
+# jet_date = '2012-11-20'
 
 
 output_directory = os.path.expanduser('~/jets/img/{:s}/{:s}'.format(jet_date, jet_number_string))

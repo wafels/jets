@@ -96,3 +96,40 @@ ax2.set_ylabel("")
 
 plt.show()
 
+#
+# EUV Plot that goes along with Gregory's reconstruction
+#
+root = '/home/ireland/Data/jets/2012-11-20/jet_region_A_1/SDO/AIA/1.5/fulldisk/193'
+m3 = sunpy.map.Map(os.path.join(root, 'AIA20121120_012806_0193.fits'))
+bl = SkyCoord(725 * u.arcsec, -375 * u.arcsec, frame=m3.coordinate_frame)
+tr = SkyCoord(875 * u.arcsec, -240 * u.arcsec, frame=m3.coordinate_frame)
+m3s = m3.submap(bl, tr)
+plt.ion()
+plt.close('all')
+
+fig = plt.figure()
+ax3 = fig.add_subplot(1, 1, 1, projection=m3s.wcs)
+
+ax3.coords[1].set_major_formatter('s.s')
+ax3.coords[0].set_major_formatter('s.s')
+m3s.plot(axes=ax3)
+title = ax3.get_title()
+ax3.set_title(title + '\n ')
+overlay = ax3.get_coords_overlay('heliographic_stonyhurst')
+lon = overlay[0]
+lon.set_ticks_visible(False)
+lon.set_ticklabel_visible(True)
+lon.coord_wrap = 180
+lon.set_major_formatter('dd')
+lon.set_ticklabel(**hg_ticklabel_kwargs)
+
+lat = overlay[1]
+lat.set_ticks_visible(False)
+lat.set_ticklabel_visible(True)
+lat.set_ticklabel_position('l')
+lat.set_ticklabel(**hg_ticklabel_kwargs)
+
+overlay.grid(linestyle='dotted', color='white')
+ax3.coords.grid(alpha=0.25)
+ax3.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
+plt.show()
