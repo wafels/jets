@@ -157,7 +157,6 @@ tvscl, alog(data)
 drawpoly, jet_mask_x, jet_mask_y
 ; Get the jet mask index values
 jet_mask_index = polyfillv(jet_mask_x, jet_mask_y, nx, ny)
-
 ;
 ; ---------------------------------------------------------------------------------------------------
 ;

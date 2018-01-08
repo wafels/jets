@@ -20,11 +20,11 @@ PRO JI_AIA_APPLY_PREP, in_files, out_files, wave, prepend, cutout_yes_no
   read_sdo, file_search(indir + wavetype), index, data
 
 ; Dump the data out
-  if cutout_yes_no eq 1 then begin
+  if cutout_yes_no eq 0 then begin
      print,'Writing prepped data to ', outdir
      print,'Wave type = ', wavetype
      aia_prep, index, data, outdir=outdir,/do_write_fits
-  endif else begin
+  if cutout_yes_no eq 1 then begin
      print,'Writing prepped data to ', outdir
      print,'Wave type = ', wavetype
      aia_prep, index, data, outdir=outdir,/do_write_fits,/cutout

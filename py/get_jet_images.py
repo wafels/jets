@@ -31,7 +31,7 @@ for times in jet_times:
         measurement = observable[1]
         z = client.query(times, instrument, measurement)
         jet_observables.append(z)
-        print instrument, measurement
+        print(instrument, measurement)
         print('Number of files = %i') % len(z0)
 
     qr.append(rpair)
@@ -42,7 +42,7 @@ for i, response in enumerate(qr):
         downloaded = client.get(observable, path=save_location + "/jet_%i/{source}/{instrument}/{file}" %i)
 
 # Get the first file in each subdirectory
-for n in range(0, len(jet_times):
+for n in range(0, len(jet_times)):
     for observable in observables:
         inst = observable[0].value.upper()
         file_names = glob.glob('/Users/ireland/Data/jets/2012-11-20/jet_%i/SDO/%S/*.fits' % (inst, i))
@@ -69,4 +69,4 @@ for n in range(0, len(jet_times):
         # Save images of the cutouts
         sm.plot()
         plt.savefig(figure_file_path)
-    
+
