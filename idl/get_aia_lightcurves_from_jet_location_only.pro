@@ -186,6 +186,12 @@ for i = 0, nwchannel - 1 do begin
       ; Gather all the data
       data = aia_map.data[0: nx-1, 0:ny-1]
 
+      ; Normalize and sum
+      if j eq 0 then begin
+         total_data = 0.0*data
+      endif
+      total_data = total_data + data/aia_map.dur
+
       ; Total emission inside the jet region
       emission[i, j] = total(data[jet_mask_index])
 
@@ -206,9 +212,9 @@ endfor
 ;
 ; Save the output
 ;
-filename = '~/jets/sav/2012-11-20/jets_region_A/euv_lightcurves.sav'
+filename = '~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only.sav'
 print, 'Saving data to ' + filename
-save, emission, initial_time_string, time, filename=filename
+save, emission, initial_time_string, time, total_data, filename=filename
 
     ; Open the plot
 ;    psclose
