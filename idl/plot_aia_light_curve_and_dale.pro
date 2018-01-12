@@ -1,3 +1,34 @@
+
+
+;
+; fill in zero value dropouts in the dale data
+;
+
+FUNCTION fill_in_dropouts, ts, level
+  i = -1
+  repeat begin
+     i = i + 1
+     if ts[i] le level then begin
+        j = -1
+        repeat begin
+           j = j + 1
+        endrep until ts[i+j] gt level
+        if i eq 0 then begin
+           ts[i:i+j] = ts[i+j]
+        endif else begin
+           if i+j eq n_elements(ts) -1 then begin
+              ts[i:i+j] = ts[i-1]
+           endif else begin
+              ts[i:i+j] = 0.5*(ts[i-1] + ts[i+j])
+           endelse
+        endelse
+        i = i + j
+     endif
+  endrep until i eq n_elements(ts)-1
+  return, ts
+end
+
+
 ;
 ; Overplot the AIA lightcurve data with the
 ; data provided by dale.
@@ -32,17 +63,16 @@ dale_data = lo[dale_start:dale_end, dale_frequency_index]
 
 hi_average = (average(hi,2))[dale_start:dale_end]
 
-
 ps,'~/jets/img/wind_and_aia.ps',/color
 ; Load the 16-LEVEL color table
 loadct, 12
 ; Dale data
-utplot, dale_time, dale_data/max(dale_data), dale_initial_time, linestyle=0, xtitle='initial time: ' + dale_initial_time, $
+utplot, dale_time, fill_in_dropouts(dale_data/max(dale_data), 0), dale_initial_time, linestyle=0, xtitle='initial time: ' + dale_initial_time, $
              ytitle='emission (normalized to peak)', $
              title='normalized emission', ystyle=1, thick=thick, charsize=1.5
 
 color_av_hi = 200
-oplot, dale_time, hi_average/max(hi_average), linestyle=3, color=color_av_hi, thick=1
+oplot, dale_time, fill_in_dropouts(hi_average/max(hi_average), 0.6), linestyle=3, color=color_av_hi, thick=1
 
 ; AIA emission
 color_94 = 20
@@ -60,3 +90,4 @@ dale_label = strtrim(string(nint(dale_lo_frequency[dale_frequency_index])), 1) +
 xyouts, 0, 0.8, 'solid = WIND (' + dale_label + ')', charthick=charthick
 xyouts, 0, 0.9, 'dash-dot = WIND (high frequency average 1.075-13.825 MHz)', charthick=charthick, color=color_av_hi
 psclose
+END
