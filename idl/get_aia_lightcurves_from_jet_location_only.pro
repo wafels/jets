@@ -125,6 +125,10 @@ for i = 0, nwchannel - 1 do begin
 
 endfor
 wdelete, 0
+filename = '~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only_integration_region_coordinates.sav'
+print, 'Saving data to ' + filename
+save, xpos, ypos, filename=filename
+stop
 ;
 ; Get the emission as a function of time for the jet mask
 ;
@@ -214,7 +218,7 @@ endfor
 ;
 filename = '~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only.sav'
 print, 'Saving data to ' + filename
-save, emission, initial_time_string, time, total_data, filename=filename
+save, emission, initial_time_string, time, total_data, xpos, ypos, filename=filename
 
     ; Open the plot
 ;    psclose

@@ -1,8 +1,15 @@
 import os
 import matplotlib.pyplot as plt
+from scipy.io import readsav
 import sunpy.map
 import astropy.units as u
 from astropy.coordinates import SkyCoord
+#
+#
+#
+show_integration_region = True
+integration_region_coordinates_filename_a = os.path.expanduser('~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only_integration_region_coordinates.sav')
+
 #
 # Get a sample 193 map
 # m = sunpy.map.Map(os.path.join(root, 'aia.lev1.193A_2012-11-20T08_00_06.84Z.image_lev1.fits'))
@@ -34,6 +41,19 @@ fontsize = 24
 
 # Heliographic Stonyhurst grid ticklabel kwargs
 hg_ticklabel_kwargs = {"color": 'blue', "style": 'italic', "fontsize": 9}
+
+# Integration region keywords
+sir_kwargs_a = {"color": 'red', "linewidth": 0.75}
+
+
+# Plot the coordinates on an axis
+def sir_plot_coords(ax, frame, filename, sir_kwargs):
+    raw_coords = readsav(filename)
+    sc = SkyCoord(raw_coords['xpos']*u.arcsec, raw_coords['ypos']*u.arcsec, frame=frame)
+    ax.plot_coord(sc, **sir_kwargs)
+    ax.plot_coord(sc[[0, -1]], **sir_kwargs)
+    return ax
+
 
 # Make the plot
 plt.ion()
@@ -67,6 +87,12 @@ ax1.coords.grid(alpha=0.0)
 ax1.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
 ax1.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
 
+# Optionally add in region that shows area summed.
+if show_integration_region:
+    ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_a, sir_kwargs_a)
+    #ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
+
+# Second map
 m2s = m2.submap(bottom_left, top_right)
 ax2 = fig.add_subplot(1, 2, 2, projection=m2s.wcs)
 ax2.coords[1].set_major_formatter('s.s')
@@ -94,8 +120,14 @@ ax2.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowpro
 ax2.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
 ax2.set_ylabel("")
 
-plt.show()
+# Optionally add in region that shows area summed.
+if show_integration_region:
+    ax2 = sir_plot_coords(ax2, m2s.coordinate_frame, integration_region_coordinates_filename_a, sir_kwargs_a)
+    #ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
 
+
+plt.show()
+stop
 #
 # EUV Plot that goes along with Gregory's reconstruction
 #
