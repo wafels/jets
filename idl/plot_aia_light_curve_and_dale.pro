@@ -36,11 +36,7 @@ end
 ; Overplot the AIA lightcurve data with the
 ; data provided by dale.
 ;
-regions = ['A', 'B']
-region = 'A'
-aia_lc_directory = '/home/ireland/jets/sav/2012-11-20/jet_region_' + region + '/'
-aia_lc_filename = 'get_aia_lightcurves_for_region_' + region + '_only.sav'
-restore, aia_lc_directory + aia_lc_filename
+
 
 ;
 ; Dale data
@@ -78,13 +74,21 @@ hi_normalized = fill_in_dropouts(dale_hi_data, 1.0)
 hi_normalized = hi_normalized - min(hi_normalized)
 hi_normalized = hi_normalized / max(hi_normalized)
 
+
+;
+; AIA Data
+;
+regions = ['A', 'B']
+region = 'A'
+
+
 ; Make the plot nice
 color_94 = 20
 color_193 = 120
 color_hi = 200
 color_lo = 0
-
 linestyle_a = 0
+linestyle_aia = [0, 5]
 
 ;
 ; Start the plot
@@ -94,7 +98,7 @@ ps,'~/jets/img/wind_and_aia.ps',/color
 ; Load the 16-LEVEL color table
 loadct, 12
 
-; Dale data
+; Dale data has the longest extent, so start with that
 utplot, dale_time, lo_normalized, dale_initial_time, $
         linestyle=linestyle_a,$
         xtitle='initial time: ' + dale_initial_time, $
@@ -117,26 +121,59 @@ xyouts, 0, 0.9, 'dash-dot = WIND (high frequency average 1.075-13.825 MHz)',$
         charthick=charthick,$
         color=color_hi
 
-; AIA 94 emission
-e94 = emission[0,*] - min(emission[0,*])
-oplot, time[0, *], e94/max(e94),$
-       linestyle=linestyle_a,$
-       color=color_94,$
-       thick=1
-xyouts, 0, 0.6, 'dashed = AIA 94',$
-        color=color_94,$
-        charthick=charthick
+; Now plot the AIA data
+dale_initial_time_tai = anytim2tai(dale_initial_time)
+nfiles_per_channel = [1000,1000]
+for i = 0, 1 do begin
+; Next region
+   region = regions[i]
+   aia_lc_directory = '/home/ireland/jets/sav/2012-11-20/jet_region_' + region + '/'
+   aia_lc_filename = 'get_aia_lightcurves_for_region_' + region + '_only.sav'
 
+; Loads in the emission and times 
+   restore, aia_lc_directory + aia_lc_filename
+
+; AIA 94 time and time range
+   tend = nfiles_per_channel[0] - 1
+   t94_offset = anytim2tai(initial_time_string[0]) - dale_initial_time_tai
+   t = t94_offset + time[0, 0:tend]
+
+; AIA 94 emission
+   e94 = emission[0, 0:tend] - min(emission[0, 0:tend])
+   e94 = e94/max(e94)
+
+; AIA 94 plot
+   oplot, t, e94,$
+          linestyle=linestyle_aia[i],$
+          color=color_94,$
+          thick=1
+   xyouts, 0, 0.6, 'dashed = AIA 94',$
+           color=color_94,$
+           charthick=charthick
+
+; AIA 193 time and time range
+   tend = nfiles_per_channel[1] - 1
+   t193_offset = anytim2tai(initial_time_string[1]) - dale_initial_time_tai
+   t = t193_offset + time[1, 0:tend]
 
 ; AIA 193 emission
-e193 = emission[1,0:1500] - min(emission[1,0:1500])
-oplot, time[1, 0:1500], e193/max(e193),$
-       linestyle=linestyle_a,$
-       color=color_193,$
-       thick=1
-xyouts, 0, 0.7, 'long dashed = AIA 193',$
-        color=color_193,$
-        charthick=charthick
+   e193 = emission[1,0:tend] - min(emission[1,0:tend])
+   e193 =  e193/max(e193)
+
+; AIA 193 plot
+   oplot, t, e193,$
+          linestyle=linestyle_aia[i],$
+          color=color_193,$
+          thick=1
+   xyouts, 0, 0.7, 'long dashed = AIA 193',$
+           color=color_193,$
+           charthick=charthick
+
+endfor
+; vertical line
+line_at_time = anytim2tai('2012-11-20 05:00:00') - dale_initial_time_tai
+oplot,[line_at_time, line_at_time], [0,1], linestyle=1
+
 
 psclose
 END

@@ -127,9 +127,6 @@ wdelete, 0
 filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/get_aia_lightcurves_for_region_' + region + '_only_integration_region_coordinates.sav'
 print, 'Saving integrated region coordinates to ' + filename
 save, xpos, ypos, filename=filename
-stop
-
-
 
 ;
 ; Get the emission as a function of time for the jet mask
@@ -173,6 +170,7 @@ jet_mask_index = polyfillv(jet_mask_x, jet_mask_y, nx, ny)
 
 ; Load in an image, and sum the data inside the jet region,
 ; and also sum cutouts to get a mean cutout image.
+nfiles_per_channel = intarr(2)
 for i = 0, nwchannel - 1 do begin
    ; Get the image at the peak of the flare and overplot the mask outline
    filename = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
@@ -188,6 +186,7 @@ for i = 0, nwchannel - 1 do begin
    aia_dir = aia_filepath + channel_string
    flist = file_list(aia_dir)
    nfiles = n_elements(flist)
+   nfiles_per_channel[i] = nfiles
 
    for j = 0, nfiles-1 do begin
       print, 'Loading files ', j, nfiles-1
@@ -230,7 +229,7 @@ endfor
 ;
 filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/get_aia_lightcurves_for_region_' + region + '_only.sav'
 print, 'Saving data to ' + filename
-save, emission, initial_time_string, time, total_data, aia, filename=filename
+save, emission, initial_time_string, time, total_data, aia, nfiles_per_channel, filename=filename
 
 
 END
