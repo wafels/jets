@@ -9,6 +9,7 @@ from astropy.coordinates import SkyCoord
 #
 show_integration_region = True
 integration_region_coordinates_filename_a = os.path.expanduser('~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only_integration_region_coordinates.sav')
+integration_region_coordinates_filename_b = os.path.expanduser('~/jets/sav/2012-11-20/jet_region_B/get_aia_lightcurves_for_region_B_only_integration_region_coordinates.sav')
 
 #
 # Get a sample 193 map
@@ -34,7 +35,7 @@ top_right = SkyCoord(1100*u.arcsec, 100*u.arcsec, frame=m1.coordinate_frame)
 axy = (810, 380)
 axytext = (1000, 300)
 bxy = (810, 660)
-bxytext = (1000, 700)
+bxytext = (1100, 700)
 bbox = dict(facecolor='white', alpha=1.0)
 arrowprops = dict(facecolor='white', shrink=0.05)
 fontsize = 24
@@ -43,7 +44,8 @@ fontsize = 24
 hg_ticklabel_kwargs = {"color": 'blue', "style": 'italic', "fontsize": 9}
 
 # Integration region keywords
-sir_kwargs_a = {"color": 'red', "linewidth": 0.75}
+sir_kwargs_a = {"color": 'white', "linewidth": 1.0}
+sir_kwargs_b = {"color": 'white', "linewidth": 1.0}
 
 
 # Plot the coordinates on an axis
@@ -84,13 +86,13 @@ lat.set_ticklabel(**hg_ticklabel_kwargs)
 
 overlay.grid(linestyle='dotted', color='white')
 ax1.coords.grid(alpha=0.0)
-ax1.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
-ax1.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
+ax1.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox)
+ax1.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox)
 
 # Optionally add in region that shows area summed.
 if show_integration_region:
     ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_a, sir_kwargs_a)
-    #ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
+    ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
 
 # Second map
 m2s = m2.submap(bottom_left, top_right)
@@ -123,7 +125,7 @@ ax2.set_ylabel("")
 # Optionally add in region that shows area summed.
 if show_integration_region:
     ax2 = sir_plot_coords(ax2, m2s.coordinate_frame, integration_region_coordinates_filename_a, sir_kwargs_a)
-    #ax1 = sir_plot_coords(ax1, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
+    ax2 = sir_plot_coords(ax2, m1s.coordinate_frame, integration_region_coordinates_filename_b, sir_kwargs_b)
 
 
 plt.show()
