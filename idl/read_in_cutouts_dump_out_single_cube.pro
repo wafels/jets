@@ -3,7 +3,7 @@
 ; the EUV jet is
 ;
 ; Which region to analyze?
-region = 'A'
+region = 'B'
 
 ; Which prep level to use?
 prep_level = '1.0'
@@ -61,7 +61,7 @@ for i = 0, nwchannel - 1 do begin
 ;
    filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/aia_datacube_' + channel_string  + '_for_region_' + region + '_only.sav'
    print, 'Saving data to ' + filename
-   save, all_data, initial_time_string, time, total_data, filename=filename
+   save, all_data, this_initial_time_string, this_time, filename=filename
 endfor
 
 
