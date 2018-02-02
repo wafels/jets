@@ -3,7 +3,7 @@
 ; the EUV jet is
 ;
 ; Which region to analyze?
-region = 'A'
+region = 'B'
 
 ; Which prep level to use?
 prep_level = '1.0'
@@ -26,6 +26,14 @@ if region eq 'A' then begin
              w193: {filename: 'AIA20121120_012954_0193.fits', channel: 193}}
    endif
 endif
+
+if region eq 'B' then begin
+   if prep_level eq '1.0' then begin
+      aia = {w94: {filename: 'ssw_cutout_20121120_081113_AIA_94_.fts', channel: 94}, $
+             w193: {filename: 'ssw_cutout_20121120_081106_AIA_193_.fts', channel: 193}}
+   endif
+endif
+
 
 
 ;
@@ -70,13 +78,10 @@ data = aia_map.data
 tvscl, alog(data)
 drawpoly, jet_mask_x, jet_mask_y
 
-; Get the jet mask index values
+; How big is the cutout?
 sz = size(data)
 nx = sz[1]
 ny = sz[2]
-jet_mask_index = polyfillv(jet_mask_x, jet_mask_y, nx, ny)
-data2 = data
-data2[jet_mask_index] = max(data)
 
 ;
 ; Overplot the mask outline and the mask as a solid filled in mask
@@ -123,8 +128,16 @@ filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/get_aia_lightcurves_
 print, 'Saving integrated region coordinates to ' + filename
 save, xpos, ypos, filename=filename
 stop
+
+
+
 ;
 ; Get the emission as a function of time for the jet mask
+;
+
+;
+; Need to know the maximum number of files in each channel
+; so we can define the correct size of various arrays.
 ;
 maxnfiles = -1
 for i = 0, nwchannel - 1 do begin
@@ -148,12 +161,18 @@ for i = 0, nwchannel - 1 do begin
 endfor
 print,'Maximum number of files is ', maxnfiles
 
+; Define the arrays we need
 initial_time_string = strarr(nwchannel)
 emission = fltarr(nwchannel, maxnfiles) - 1
 time = fltarr(nwchannel, maxnfiles) - 1
 time_string = strarr(nwchannel, maxnfiles)
 utplot_basetime = strarr(nwchannel)
 
+; Get the jet mask index values
+jet_mask_index = polyfillv(jet_mask_x, jet_mask_y, nx, ny)
+
+; Load in an image, and sum the data inside the jet region,
+; and also sum cutouts to get a mean cutout image.
 for i = 0, nwchannel - 1 do begin
    ; Get the image at the peak of the flare and overplot the mask outline
    filename = gt_tagval(gt_tagval(aia, wchannel[i]), 'channel')
@@ -211,7 +230,7 @@ endfor
 ;
 filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/get_aia_lightcurves_for_region_' + region + '_only.sav'
 print, 'Saving data to ' + filename
-save, emission, initial_time_string, time, total_data, xpos, ypos, filename=filename
+save, emission, initial_time_string, time, total_data, aia, filename=filename
 
 
 END
