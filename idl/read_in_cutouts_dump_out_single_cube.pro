@@ -33,6 +33,7 @@ for i = 0, nwchannel - 1 do begin
       filename = flist[j]
 
       ; Define the file and load in the object
+      print,"Reading " + filename
       aobj = obj_new('aia')
       aobj -> read, filename
       aia_map = aobj->get(/map)
@@ -52,7 +53,7 @@ for i = 0, nwchannel - 1 do begin
       all_data[*, *, j] = aia_map.data/aia_map.dur
 
       ; Get the time relative to the initial time
-      time[j] = anytim2tai(aia_map.time) - initial_time_string
+      time[j] = anytim2tai(aia_map.time) - anytim2tai(initial_time_string)
 
    endfor
 
@@ -61,7 +62,7 @@ for i = 0, nwchannel - 1 do begin
 ;
    filename = '~/jets/sav/2012-11-20/jet_region_' + region + '/aia_datacube_' + channel_string  + '_for_region_' + region + '_only.sav'
    print, 'Saving data to ' + filename
-   save, all_data, this_initial_time_string, this_time, filename=filename
+   save, all_data, initial_time_string, time, filename=filename
 endfor
 
 
