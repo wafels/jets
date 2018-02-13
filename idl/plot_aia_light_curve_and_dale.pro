@@ -135,8 +135,8 @@ for i = 0, 1 do begin
 
 ; AIA 94 time and time range
    tend = nfiles_per_channel[0] - 1
-   t94_offset = anytim2tai(initial_time_string[0]) - dale_initial_time_tai
-   t = t94_offset + time[0, 0:tend]
+   t94_offset = anytim2tai(initial_time_strings[0]) - dale_initial_time_tai
+   t = t94_offset + times[0, 0:tend]
 
 ; AIA 94 emission
    e94 = emission[0, 0:tend] - min(emission[0, 0:tend])
@@ -153,8 +153,8 @@ for i = 0, 1 do begin
 
 ; AIA 193 time and time range
    tend = nfiles_per_channel[1] - 1
-   t193_offset = anytim2tai(initial_time_string[1]) - dale_initial_time_tai
-   t = t193_offset + time[1, 0:tend]
+   t193_offset = anytim2tai(initial_time_strings[1]) - dale_initial_time_tai
+   t = t193_offset + times[1, 0:tend]
 
 ; AIA 193 emission
    e193 = emission[1,0:tend] - min(emission[1,0:tend])

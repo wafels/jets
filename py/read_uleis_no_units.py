@@ -19,14 +19,26 @@ rc('text', usetex=True)
 # calculate path lengths to look for consistency - must be greater than 1 AU.
 
 plt.ion()
+plt.close('all')
 
 # Which year did this event occur in?
 year = 2012
+
+# When the fit shows an increase of this fraction of the
+# range, then this is when we say we are on the leading edge
+# of the fit
+fractional_increase_value = 0.1
 
 # Where is the data?
 file_name = 'WPHASMOO_2012_325-2.pha'
 directory = '~/Data/jets/2012-11-20/'
 filepath = os.path.expanduser(os.path.join(directory, file_name))
+
+# An exact point we have to fit and whether to use it
+use_exact_point = True
+exact_point = [325.0 + 7.2/24.0, 0.507]
+exact_point_doy_error = 0.01
+exact_point_velocity_error = 0.01
 
 # Column names are not in the file, so just use Georgia's
 names = ['month', 'day', 'year', 'hour1', 'hour2', 'minut', 'year_again', 'doy', 'deltaT', 'mass', 'enuc']
@@ -141,7 +153,6 @@ class FitEnhancementEdge:
             self.best_fit = np.nan
             self.fitted = False
 
-
 # Do the fit
 fits = []
 v = []
@@ -150,12 +161,13 @@ for i in range(0, n_velocity_bins):
     this_v = velocity_bins_centers[i]
     p0 = [1.0, 12, 325.5, 0.1]
     he3 = hist[:, i]
-    fee = FitEnhancementEdge(edge_function, doy_bins_centers, he3, p0, fractional_increase=None)
+    fee = FitEnhancementEdge(edge_function, doy_bins_centers, he3, p0, fractional_increase=fractional_increase_value)
     v.append(this_v)
     t0.append(fee.t0)
     fits.append(fee)
 
 # Plot all the enhancement edge fits
+fractional_increase_string = '{:s}={:n}'.format('fractional increase above background', fee.fractional_increase)
 nfit = 0
 for fit in fits:
     if fit.fitted:
@@ -207,7 +219,15 @@ fittable_t0_values = np.logical_and(t0_finite, t0_error_estimate_finite)
 v_fittable = v[fittable_t0_values]
 t0_fittable = t0[fittable_t0_values]
 w_fittable = t0_error_estimate[fittable_t0_values] + minute_bins/(24*60.0)
-fit, cov = np.polyfit(v_fittable, t0_fittable, 1, w=1.0/w_fittable, cov=True)
+if use_exact_point:
+    v_fit = np.append(v_fittable, exact_point[1])
+    t0_fit = np.append(t0_fittable, exact_point[0])
+    w_fit = np.append(w_fittable, exact_point_doy_error)
+else:
+    v_fit = v_fittable
+    t0_fit = t0_fittable
+    w_fit = w_fittable
+fit, cov = np.polyfit(v_fit, t0_fit, 1, w=1.0/w_fit, cov=True)
 
 # Calculate the bestfit
 best_fit = np.polyval(fit, v_range)
@@ -234,6 +254,11 @@ ax3.errorbar(v_fittable, t0_fittable, xerr=v_err[fittable_t0_values], yerr=w_fit
 ax3.plot(v_range, best_fit, color='r')
 ax3.set_xlabel(speed_label)
 ax3.set_ylabel(time_label)
+ax3.set_title('Best fit\n{:s}'.format(fractional_increase_string))
+plt.grid(linestyle=':')
+if use_exact_point:
+    ax3.plot(exact_point[1], exact_point[0], 'ro')
+
 
 
 def itl(year, doy):
@@ -241,10 +266,9 @@ def itl(year, doy):
     return initial_time.strftime("%H:%M:%S")
 
 # Plot the scatter and the fit edges and the best fit
-fractional_increase = str(fee.fractional_increase)
 one_sigma_high_label = itl(year, one_sigma_high)
 one_sigma_low_label = itl(year, one_sigma_low)
-initial_time_label = itl(year, fit[1]) + ' [{:s}]'.format(fractional_increase)
+initial_time_label = itl(year, fit[1])
 initial_time_label += '\n'
 initial_time_label += r'{\it ' + one_sigma_low_label + r'}$\rightarrow$' + r'{\it ' + one_sigma_high_label + '}'
 fig = plt.figure(5)
@@ -252,7 +276,7 @@ ax5 = plt.subplot()
 ax5.scatter(doy, 1/betat_c, s=0.25)
 ax5.set_xlabel(time_label)
 ax5.set_ylabel(speed_label)
-ax5.set_title(data_label)
+ax5.set_title('{:s}\n{:s}'.format(data_label, fractional_increase_string))
 ax5.set_ylim(plot_v_limits)
 ax5.set_xlim(plot_doy_limits)
 ax5.axvline(histogram_time_range[0], color='k', label='fit limit', linestyle=":")
@@ -260,6 +284,8 @@ ax5.axvline(histogram_time_range[1], color='k', linestyle=":")
 ax5.axvline(fit[1], color='k', label=initial_time_label, linestyle='dashed')
 ax5.axhline(v_range[0], color='k', linestyle=":")
 ax5.axhline(histogram_velocity_range[1], color='k', linestyle=":")
-ax5.legend(fontsize=10, loc='top right')
+ax5.legend(fontsize=10)
 ax5.errorbar(t0_fittable, v_fittable, yerr=v_err[fittable_t0_values], xerr=w_fittable, color='k')
 ax5.plot(best_fit, v_range, color='r')
+if use_exact_point:
+    ax5.plot(exact_point[0], exact_point[1], 'ro')
