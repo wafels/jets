@@ -36,9 +36,9 @@ filepath = os.path.expanduser(os.path.join(directory, file_name))
 
 # An exact point we have to fit and whether to use it
 use_exact_point = True
-exact_point = [325.0 + 7.2/24.0, 0.507]
-exact_point_doy_error = 0.01
-exact_point_velocity_error = 0.01
+exact_point = [325.0 + 7.2/24.0, 1/0.507]
+exact_point_doy_error = 0.001
+exact_point_velocity_error = 0.001
 
 # Column names are not in the file, so just use Georgia's
 names = ['month', 'day', 'year', 'hour1', 'hour2', 'minut', 'year_again', 'doy', 'deltaT', 'mass', 'enuc']
