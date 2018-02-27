@@ -2,19 +2,33 @@
 # Plot the WIND/WAVES spectrogram and WAVES/AIA timeseries together
 #
 import os
+from datetime import timedelta
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.colors as colors
+from scipy.io import readsav
 from sunpy.time import parse_time
 import cdflib
 
-waves_spectrogram_type = 'E_VOLTAGE_RAD2'
-waves_spectrogram_frequency = 'Frequency_RAD2'
+#
+#
+#
+region_A_lightcurves_sav = os.path.expanduser('~/jets/sav/2012-11-20/jet_region_A/get_aia_lightcurves_for_region_A_only.sav')
+region_B_lightcurves_sav = os.path.expanduser('~/jets/sav/2012-11-20/jet_region_B/get_aia_lightcurves_for_region_B_only.sav')
+
+region_lightcurves = {"A": readsav(region_A_lightcurves_sav),
+                      "B": readsav(region_B_lightcurves_sav)}
+
+#
+# Waves data
+#
+waves_spectrogram_type = 'E_VOLTAGE_RAD1'
+waves_spectrogram_frequency = 'Frequency_RAD1'
 waves_start = parse_time('2012-11-20 00:00:00')
 waves_end = parse_time('2012-11-20 10:00:00')
 
-waves_cdf = os.path.expanduser('/Users/ireland/Data/jets/2012-11-20/jetsdata/wi_h1s_wav_20121120000030_20121120235930.cdf')
+waves_cdf = os.path.expanduser('~/Data/jets/2012-11-20/downloaded_wind_data/wi_h1s_wav_20121119000030_20121120235930.cdf')
 
 # Load the CDF file
 waves_spectrogram_cdf = cdflib.CDF(waves_cdf)
@@ -41,35 +55,128 @@ x_lims = mdates.date2num(epoch)
 # Set some generic y-limits.
 y_lims = [frequencies[0], frequencies[-1]]
 
+# Region A data
+regions = dict()
+for region in ('A', 'B'):
+    regions[region] = dict()
+    r = region_lightcurves[region]
+    for i, tag in enumerate(('94', '193')):
+        regions[region][tag] = {"start_time": r['initial_time_strings'][i].decode(),
+                                "times": r['times'][:, i],
+                                "emission": r['emission'][:, i],
+                                "n": r['nfiles_per_channel'][i]}
 
-ax1 = plt.subplot(211)
+#
+# Plot is a little tricky.  Need to have space for the colorbar
+# See https://stackoverflow.com/questions/37737538/merge-matplotlib-subplots-with-shared-x-axis
+# https://stackoverflow.com/questions/13784201/matplotlib-2-subplots-1-colorbar
+# https://stackoverflow.com/questions/46694889/matplotlib-sharex-with-colorbar-not-working
+"""
+# Set up the plot, with sharing on the x axis
+fig, axes = plt.subplots(nrows=2, ncols=1)
 
+# Plot the time-series information
+axes[0].plot(x_lims, np.arange(0, len(x_lims)))
+axes[0].grid(linestyle=':')
 
-ax2 = plt.subplot(212)
-
+# Plot the spectrogram information
 # Using ax.imshow we set two keyword arguments. The first is extent.
 # We give extent the values from x_lims and y_lims above.
 # We also set the aspect to "auto" which should set the plot up nicely.
-cax = ax2.imshow(waves_spectrogram_data, norm=colors.LogNorm(vmin=0.4),
-                extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
-                origin='lower', aspect='auto')
-cbar = ax2.colorbar(cax)
-# We tell Matplotlib that the x-axis is filled with datetime data,
-# this converts it from a float (which is the output of date2num)
-# into a nice datetime string.
-ax2.xaxis_date()
-ax2.set_ylabel('frequency')
-ax2.set_xlabel('{:s} [DOY={:s}]'.format(first_day, first_day_doy))
-ax2.grid(linestyle=':')
+im = axes[1].imshow(waves_spectrogram_data, norm=colors.LogNorm(vmin=0.4),
+                    extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
+                    origin='lower', aspect='auto')
+
+axes[1].set_ylabel('frequency')
+axes[1].set_xlabel('{:s} [DOY={:s}]'.format(first_day, first_day_doy))
+axes[1].grid(linestyle=':')
+
 
 # We can use a DateFormatter to choose how this datetime string will look.
 # I have chosen HH:MM:SS though you could add DD/MM/YY if you had data
 # over different days.
+
+# We tell Matplotlib that the x-axis is filled with datetime data,
+# this converts it from a float (which is the output of date2num)
+# into a nice datetime string.
+axes[1].xaxis_date()
 date_format = mdates.DateFormatter('%H:%M:%S')
-ax.xaxis.set_major_formatter(date_format)
+axes[1].xaxis.set_major_formatter(date_format)
 
 # This simply sets the x-axis data to diagonal so it fits better.
-fig.autofmt_xdate()
+fig.autofmt_xdate(rotation=30)
+
+# Make room for the colorbar
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im)
+# Show the results
+plt.show()
+"""
+#
+# Second attempt
+#
+plt.close('all')
+# Grid keywords
+kw = {'height_ratios': [5, 5], "width_ratios": [95, 5]}
+
+# Set up the plot
+fig, ((ax, cax), (ax2, cax2)) = plt.subplots(2, 2,  gridspec_kw=kw, sharex='col')
+
+# Plot the time-series information
+for region in ('A', 'B'):
+    r = regions[region]
+    for tag in ('94', '193'):
+        emission = r[tag]['emission']
+        times = r[tag]['times']
+        start_time = parse_time(r[tag]['start_time'])
+        n = r[tag]['n']
+        t = np.zeros_like(times, dtype=np.float64)
+        for i in range(0, len(t)):
+            t[i] = mdates.date2num(start_time + timedelta(seconds=np.int(times[i])))
+
+        e = emission[0: n]
+        e = e - np.min(e)
+        e = e/np.max(e)
+        ax.plot(t[0: n], e, linewidth=0.5, label='region {:s}[{:s}]'.format(region, tag))
+
+ax.legend(bbox_to_anchor=(1.03, 0), loc=3)
+ax.grid(linestyle=':')
+
+# Nothing is to be plotted in this part of the plot
+cax.axis("off")
+
+# Plot the spectrogram information
+# Using ax.imshow we set two keyword arguments. The first is extent.
+# We give extent the values from x_lims and y_lims above.
+# We also set the aspect to "auto" which should set the plot up nicely.
+im = ax2.imshow(waves_spectrogram_data, norm=colors.LogNorm(vmin=0.4),
+                    extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
+                    origin='lower', aspect='auto')
+
+ax2.set_ylabel('frequency')
+ax2.set_xlabel('{:s} [DOY={:s}]'.format(first_day, first_day_doy))
+ax2.grid(linestyle=':')
+
+# Add the colorbar
+fig.colorbar(im, cax=cax2, label="score")
+
+# We can use a DateFormatter to choose how this datetime string will look.
+# I have chosen HH:MM:SS though you could add DD/MM/YY if you had data
+# over different days.
+
+# We tell Matplotlib that the x-axis is filled with datetime data,
+# this converts it from a float (which is the output of date2num)
+# into a nice datetime string.
+ax2.xaxis_date()
+date_format = mdates.DateFormatter('%H:%M:%S')
+ax2.xaxis.set_major_formatter(date_format)
+
+# Get the shared x-axis
+ax2.get_shared_x_axes().join(ax2, ax)
+
+# This simply sets the x-axis data to diagonal so it fits better.
+fig.autofmt_xdate(rotation=30)
 
 # Show the results
 plt.show()
