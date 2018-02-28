@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.colors as colors
+import matplotlib.cm as cm
 from scipy.io import readsav
 from sunpy.time import parse_time
 import cdflib
@@ -140,6 +141,9 @@ for region in ('A', 'B'):
         e = e/np.max(e)
         ax.plot(t[0: n], e, linewidth=0.5, label='region {:s}[{:s}]'.format(region, tag))
 
+# Legend is outside the main plot
+ax.set_ylabel('normalized intensity')
+ax.set_title('normalized intensities in AIA regions')
 ax.legend(bbox_to_anchor=(1.03, 0), loc=3)
 ax.grid(linestyle=':')
 
@@ -151,9 +155,10 @@ cax.axis("off")
 # We give extent the values from x_lims and y_lims above.
 # We also set the aspect to "auto" which should set the plot up nicely.
 im = ax2.imshow(waves_spectrogram_data, norm=colors.LogNorm(vmin=0.4),
-                    extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
-                    origin='lower', aspect='auto')
-
+                extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
+                origin='lower', aspect='auto', cmap=cm.jet)
+ax2.set_title('WIND/WAVES')
+ax2.set_yscale('log')
 ax2.set_ylabel('frequency')
 ax2.set_xlabel('{:s} [DOY={:s}]'.format(first_day, first_day_doy))
 ax2.grid(linestyle=':')
