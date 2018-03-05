@@ -174,10 +174,10 @@ im = ax2.imshow(waves_spectrogram_data_plotted,
 ax2.set_title('(d) WIND/WAVES {:s}'.format(waves_spectrogram_dlabel))
 ax2.set_yscale('log')
 ax2.set_ylabel(waves_spectrogram_ylabel)
-ax2.set_xlabel('{:s} {:s} - {:s}\nDOY={:s}'.format(first_day,
-                                                  epoch_all[time_index[0]].strftime('%H:%M:%S'),
-                                                  epoch_all[time_index[1]].strftime('%H:%M:%S'),
-                                                  first_day_doy))
+ax2.set_xlabel('{:s} {:s} - {:s} UT\nDOY={:s}'.format(first_day,
+                                                   waves_start.strftime('%H:%M:%S'),
+                                                   waves_end.strftime('%H:%M:%S'),
+                                                   first_day_doy))
 ax2.grid(linestyle=':')
 
 # Add the colorbar
