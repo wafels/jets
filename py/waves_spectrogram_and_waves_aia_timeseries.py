@@ -41,9 +41,20 @@ waves_spectrogram_data = np.transpose(waves_spectrogram_cdf.varget(waves_spectro
 frequencies = waves_spectrogram_cdf.varget(waves_spectrogram_frequency)
 epoch_all = [parse_time(dt) for dt in cdflib.cdfepoch.encode(waves_spectrogram_cdf.varget('Epoch'))]
 epoch = []
-for ep in epoch_all:
+epoch_index = []
+for i, ep in enumerate(epoch_all):
     if ep >= waves_start and ep <= waves_end:
         epoch.append(ep)
+        epoch_index.append(i)
+time_index = [np.min(epoch_index), np.max(epoch_index)]
+
+# Labels derived from the CDF file
+waves_spectrogram_y_info = waves_spectrogram_cdf.varattsget(variable=waves_spectrogram_frequency)
+waves_spectrogram_ylabel = '{:s} [{:s}]'.format(waves_spectrogram_y_info['LABLAXIS'],
+                                                waves_spectrogram_y_info['UNITS'])
+waves_spectrogram_data_info = waves_spectrogram_cdf.varattsget(variable=waves_spectrogram_type)
+waves_spectrogram_clabel = '{:s}'.format(waves_spectrogram_data_info['LABLAXIS'])
+waves_spectrogram_dlabel = '{:s}'.format(waves_spectrogram_data_info['CATDESC'])
 
 # Get the first day
 first_day = epoch[0].strftime('%Y-%m-%d')
@@ -122,7 +133,7 @@ plt.close('all')
 kw = {'height_ratios': [5, 5], "width_ratios": [95, 5]}
 
 # Set up the plot
-fig, ((ax, cax), (ax2, cax2)) = plt.subplots(2, 2,  gridspec_kw=kw, sharex='col')
+fig, ((ax, cax), (ax2, cax2)) = plt.subplots(2, 2,  gridspec_kw=kw, sharex='col', figsize=(10, 5))
 
 # Plot the time-series information
 for region in ('A', 'B'):
@@ -143,28 +154,40 @@ for region in ('A', 'B'):
 
 # Legend is outside the main plot
 ax.set_ylabel('normalized intensity')
-ax.set_title('normalized intensities in AIA regions')
+ax.set_title('(c) normalized intensities in AIA regions')
 ax.legend(bbox_to_anchor=(1.03, 0), loc=3)
 ax.grid(linestyle=':')
 
-# Nothing is to be plotted in this part of the plot
+# Nothing is to be plotted in this part of the plot except the legend
 cax.axis("off")
 
 # Plot the spectrogram information
 # Using ax.imshow we set two keyword arguments. The first is extent.
 # We give extent the values from x_lims and y_lims above.
 # We also set the aspect to "auto" which should set the plot up nicely.
-im = ax2.imshow(waves_spectrogram_data, norm=colors.LogNorm(vmin=0.4),
+vmin = 0.4
+waves_spectrogram_data_plotted = waves_spectrogram_data[:, time_index[0]:time_index[1]]
+im = ax2.imshow(waves_spectrogram_data_plotted,
+                norm=colors.LogNorm(vmin=0.4),
                 extent=[x_lims[0], x_lims[-1],  y_lims[0], y_lims[1]],
                 origin='lower', aspect='auto', cmap=cm.jet)
-ax2.set_title('WIND/WAVES')
+ax2.set_title('(d) WIND/WAVES {:s}'.format(waves_spectrogram_dlabel))
 ax2.set_yscale('log')
-ax2.set_ylabel('frequency')
-ax2.set_xlabel('{:s} [DOY={:s}]'.format(first_day, first_day_doy))
+ax2.set_ylabel(waves_spectrogram_ylabel)
+ax2.set_xlabel('{:s} {:s} - {:s}\nDOY={:s}'.format(first_day,
+                                                  epoch_all[time_index[0]].strftime('%H:%M:%S'),
+                                                  epoch_all[time_index[1]].strftime('%H:%M:%S'),
+                                                  first_day_doy))
 ax2.grid(linestyle=':')
 
 # Add the colorbar
-fig.colorbar(im, cax=cax2, label="score")
+lo = vmin
+hi = np.max(waves_spectrogram_data_plotted)
+nticks = 4
+cticks = np.exp(np.log(lo) + (np.log(hi) - np.log(lo))*np.arange(0, nticks) / (nticks-1))
+clabels = ['{:3.1f}'.format(ctick) for ctick in cticks.tolist()]
+cbar = fig.colorbar(im, cax=cax2, label=waves_spectrogram_clabel, ticks=cticks)
+cbar.ax.set_yticklabels(clabels)
 
 # We can use a DateFormatter to choose how this datetime string will look.
 # I have chosen HH:MM:SS though you could add DD/MM/YY if you had data

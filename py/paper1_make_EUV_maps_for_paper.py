@@ -69,7 +69,7 @@ ax1.coords[1].set_major_formatter('s.s')
 ax1.coords[0].set_major_formatter('s.s')
 m1s.plot(axes=ax1)
 title = ax1.get_title()
-ax1.set_title(title + '\n ')
+ax1.set_title('(a) ' + title + '\n ')
 overlay = ax1.get_coords_overlay('heliographic_stonyhurst')
 lon = overlay[0]
 lon.set_ticks_visible(False)
@@ -101,7 +101,7 @@ ax2.coords[1].set_major_formatter('s.s')
 ax2.coords[0].set_major_formatter('s.s')
 m2s.plot(axes=ax2)
 title = ax2.get_title()
-ax2.set_title(title + '\n ')
+ax2.set_title('(b) ' + title + '\n ')
 overlay = ax2.get_coords_overlay('heliographic_stonyhurst')
 lon = overlay[0]
 lon.set_ticks_visible(False)
@@ -118,8 +118,8 @@ lat.set_ticklabel(**hg_ticklabel_kwargs)
 
 overlay.grid(linestyle='dotted', color='white')
 ax2.coords.grid(alpha=0.0)
-ax2.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
-ax2.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox, arrowprops=arrowprops)
+ax2.annotate('A', xy=axy, xytext=axytext, fontsize=fontsize, bbox=bbox)
+ax2.annotate('B', xy=bxy, xytext=bxytext, fontsize=fontsize, bbox=bbox)
 ax2.set_ylabel("")
 
 # Optionally add in region that shows area summed.
