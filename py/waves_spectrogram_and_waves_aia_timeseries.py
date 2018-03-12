@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+from matplotlib.patches import Rectangle
 from scipy.io import readsav
 from sunpy.time import parse_time
 import cdflib
@@ -59,6 +60,32 @@ waves_spectrogram_dlabel = '{:s}'.format(waves_spectrogram_data_info['CATDESC'])
 # Get the first day
 first_day = epoch[0].strftime('%Y-%m-%d')
 first_day_doy = epoch[0].strftime('%j')
+
+# Injection time
+injection_time_yymmddhh = "2012-11-20 04:00:00"
+f_hour = 0.77
+injection_time_fractional_hour = timedelta(seconds=f_hour * 60 * 60)
+injection_time = parse_time(injection_time_yymmddhh) + injection_time_fractional_hour
+injection_time_t = mdates.date2num(injection_time)
+injection_time_t_kwargs = {"label": 'injection time\n{:s} UT'.format(injection_time.strftime("%H:%M:%S")),
+                           "color": "k",
+                           "linewidth": 2}
+
+injection_time_one_sigma = timedelta(seconds=0.66 * 60 * 60)
+injection_time_one_sigma_t = [mdates.date2num(injection_time - injection_time_one_sigma),
+                              mdates.date2num(injection_time + injection_time_one_sigma)]
+injection_time_one_sigma_t_kwargs = {"label": '$\pm1\sigma$ ($\sigma$={:n}hrs)'.format(f_hour),
+                                     "linestyle": "--",
+                                     "color": "k",
+                                     "linewidth": 1}
+
+injection_time_two_sigma_t = [mdates.date2num(injection_time - 2 * injection_time_one_sigma),
+                              mdates.date2num(injection_time + 2 * injection_time_one_sigma)]
+injection_time_two_sigma_t_kwargs = {"label": '$\pm2\sigma$'.format(2*f_hour),
+                                     "linestyle": ":",
+                                     "color": "k",
+                                     "linewidth": 1}
+
 
 # You can then convert these datetime.datetime objects to the correct
 # format for matplotlib to work with.
@@ -155,8 +182,21 @@ for region in ('A', 'B'):
 # Legend is outside the main plot
 ax.set_ylabel('normalized intensity')
 ax.set_title('(c) normalized intensities in AIA regions')
-ax.legend(bbox_to_anchor=(1.03, 0), loc=3)
+ax.axvline(injection_time_t, **injection_time_t_kwargs)
+ax.axvline(injection_time_one_sigma_t[0], **injection_time_one_sigma_t_kwargs)
+ax.axvline(injection_time_two_sigma_t[0], **injection_time_two_sigma_t_kwargs)
+ax.legend(bbox_to_anchor=(1.01, -0.10), loc=3)
 ax.grid(linestyle=':')
+ax.axvline(injection_time_one_sigma_t[1], **injection_time_one_sigma_t_kwargs)
+ax.axvline(injection_time_two_sigma_t[1], **injection_time_two_sigma_t_kwargs)
+ax.fill_betweenx((0, 1),
+                 injection_time_one_sigma_t[0], injection_time_one_sigma_t[1],
+                 alpha=0.1, color='y')
+ax.fill_betweenx((0, 1),
+                 injection_time_two_sigma_t[0], injection_time_two_sigma_t[1],
+                 alpha=0.1, color='y')
+ax.set_ylim(0, 1)
+
 
 # Nothing is to be plotted in this part of the plot except the legend
 cax.axis("off")
@@ -199,6 +239,21 @@ cbar.ax.set_yticklabels(clabels)
 ax2.xaxis_date()
 date_format = mdates.DateFormatter('%H:%M:%S')
 ax2.xaxis.set_major_formatter(date_format)
+ax2.fill_betweenx((y_lims[0], y_lims[1]),
+                  injection_time_one_sigma_t[0], injection_time_one_sigma_t[1],
+                  hatch='/', alpha=0)
+ax2.fill_betweenx((y_lims[0], y_lims[1]),
+                  injection_time_two_sigma_t[0], injection_time_one_sigma_t[0],
+                  hatch='.', alpha=0, linewidth=0.5)
+ax2.fill_betweenx((y_lims[0], y_lims[1]),
+                  injection_time_one_sigma_t[1], injection_time_two_sigma_t[1],
+                  hatch='.', alpha=0)
+
+ax2.axvline(injection_time_t, **injection_time_t_kwargs)
+ax2.axvline(injection_time_one_sigma_t[0], **injection_time_one_sigma_t_kwargs)
+ax2.axvline(injection_time_one_sigma_t[1], **injection_time_one_sigma_t_kwargs)
+ax2.axvline(injection_time_two_sigma_t[0], **injection_time_two_sigma_t_kwargs)
+ax2.axvline(injection_time_two_sigma_t[1], **injection_time_two_sigma_t_kwargs)
 
 # Get the shared x-axis
 ax2.get_shared_x_axes().join(ax2, ax)
